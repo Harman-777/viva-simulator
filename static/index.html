@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="AI-powered classroom viva simulator. Choose your role to get started.">
+  <title>viva. · Intelligent Viva Platform</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    body { background: #060e1b; }
+    .role-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .role-brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+      color: #fff;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.07em;
+      text-decoration: none;
+    }
+    .role-brand .brand-mark { background: #3b82f6; }
+    .role-brand .brand-dot { color: #3b82f6; }
+    .role-hero-text {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .role-hero-text h1 {
+      margin: 0 0 14px;
+      color: #fff;
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+      line-height: 1.08;
+    }
+    .role-hero-text h1 span {
+      background: linear-gradient(90deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .role-hero-text p {
+      margin: 0;
+      color: rgba(255,255,255,0.55);
+      font-size: 16px;
+      line-height: 1.6;
+    }
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 720px;
+    }
+    .role-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 48px 32px 40px;
+      border-radius: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
+      text-decoration: none;
+      text-align: center;
+      overflow: hidden;
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .role-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .role-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      opacity: 0.12;
+      background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+    .role-student {
+      background: radial-gradient(circle at 30% 20%, rgba(96,165,250,0.25), transparent 50%),
+                  linear-gradient(160deg, #0d1f3c 0%, #0a1628 100%);
+    }
+    .role-student:hover { border-color: rgba(96,165,250,0.35); }
+    .role-teacher {
+      background: radial-gradient(circle at 70% 20%, rgba(167,139,250,0.25), transparent 50%),
+                  linear-gradient(160deg, #1a0d3c 0%, #110a28 100%);
+    }
+    .role-teacher:hover { border-color: rgba(167,139,250,0.35); }
+    .role-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 24px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+    .role-student .role-icon {
+      background: rgba(96,165,250,0.15);
+      box-shadow: 0 0 0 1px rgba(96,165,250,0.2);
+    }
+    .role-teacher .role-icon {
+      background: rgba(167,139,250,0.15);
+      box-shadow: 0 0 0 1px rgba(167,139,250,0.2);
+    }
+    .role-card h2 {
+      margin: 0 0 10px;
+      color: #fff;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .role-card p {
+      margin: 0 0 28px;
+      color: rgba(255,255,255,0.5);
+      font-size: 14px;
+      line-height: 1.6;
+      flex-grow: 1;
+    }
+    .role-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: background 0.18s ease, transform 0.18s ease;
+    }
+    .role-student .role-btn {
+      color: #0a1628;
+      background: #60a5fa;
+    }
+    .role-student .role-btn:hover {
+      background: #93c5fd;
+    }
+    .role-teacher .role-btn {
+      color: #110a28;
+      background: #a78bfa;
+    }
+    .role-teacher .role-btn:hover {
+      background: #c4b5fd;
+    }
+    .role-footer {
+      margin-top: 48px;
+      text-align: center;
+    }
+    .role-footer p {
+      margin: 0;
+      color: rgba(255,255,255,0.3);
+      font-size: 13px;
+    }
+    .role-footer a {
+      color: rgba(255,255,255,0.45);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .role-footer a:hover { color: rgba(255,255,255,0.7); }
+    @media (max-width: 600px) {
+      .role-grid {
+        grid-template-columns: 1fr;
+        max-width: 380px;
+      }
+      .role-card {
+        padding: 36px 24px 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="role-page">
+    <a href="/" class="role-brand" aria-label="Viva home">
+      <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+      <span>viva<span class="brand-dot">.</span></span>
+    </a>
+
+    <div class="role-hero-text">
+      <h1>Who are <span>you?</span></h1>
+      <p>Choose your role to get started with AI-powered viva preparation.</p>
+    </div>
+
+    <div class="role-grid">
+      <a href="/student" class="role-card role-student">
+        <div class="role-icon">🎓</div>
+        <h2>I'm a Student</h2>
+        <p>Practice with AI-generated questions, upload study notes, and join teacher-assigned viva exams.</p>
+        <span class="role-btn">Enter Student Space →</span>
+      </a>
+
+      <a href="/teacher" class="role-card role-teacher">
+        <div class="role-icon">📋</div>
+        <h2>I'm a Teacher</h2>
+        <p>Create assessments, generate exam links, review submissions, and override AI evaluations.</p>
+        <span class="role-btn">Enter Teacher Portal →</span>
+      </a>
+    </div>
+
+    <div class="role-footer">
+      <p>Powered by OpenAI · <a href="https://github.com" target="_blank" rel="noopener">Open source</a></p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Student dashboard — manage your API key, access practice library, and join assigned vivas.">
+  <title>Student Dashboard · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .student-hero {
+      padding: 48px 0 28px;
+    }
+    .student-hero .eyebrow { color: var(--blue); }
+    .student-hero h1 {
+      margin: 8px 0 12px;
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+    .student-hero h1 span { color: var(--blue); }
+    .student-hero > p {
+      max-width: 600px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .student-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .api-key-card {
+      grid-column: 1 / -1;
+    }
+    .api-key-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .api-key-header h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .api-key-row {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .api-status-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .api-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .action-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 200px;
+    }
+    .action-card h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+    .action-card p {
+      margin: 0 0 24px;
+      color: var(--ink-soft);
+      font-size: 14px;
+      line-height: 1.6;
+      flex-grow: 1;
+    }
+    .action-tag {
+      align-self: flex-start;
+      margin-bottom: 16px;
+      padding: 5px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .tag-blue { color: var(--blue); background: var(--soft-blue); }
+    .tag-violet { color: var(--violet); background: #f3efff; }
+    .join-form-inline {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+    }
+    .join-form-inline input { height: 44px; }
+    .join-form-inline .button { white-space: nowrap; }
+    @media (max-width: 700px) {
+      .student-grid { grid-template-columns: 1fr; }
+      .api-key-row { grid-template-columns: 1fr; }
+      .join-form-inline { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link nav-link-active" href="/student">Dashboard</a>
+        <a class="nav-link" href="/questions">Practice Library</a>
+      </nav>
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="connectionStatus">Checking...</span>
+      </div>
+    </header>
+
+    <section class="student-hero">
+      <p class="eyebrow">Student Workspace</p>
+      <h1>Your <span>AI Study Hub.</span></h1>
+      <p>Configure your OpenAI API key, practice with generated questions, or join a teacher-assigned viva exam.</p>
+    </section>
+
+    <div class="student-grid">
+      <!-- AI Engine Configuration Card -->
+      <section class="panel api-key-card">
+        <div class="api-key-header">
+          <span class="step-label">🤖</span>
+          <h2>AI Engine Configuration (Local LLM & Cloud API)</h2>
+        </div>
+        <!-- Hidden trap inputs to prevent browser password managers from autofilling saved email/password into model name/API key -->
+        <div style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
+          <input type="text" name="fake_username_trap" tabindex="-1" autocomplete="username">
+          <input type="password" name="fake_password_trap" tabindex="-1" autocomplete="current-password">
+        </div>
+        <p style="margin: 0 0 14px; color: var(--ink-soft); font-size: 13px; line-height: 1.55;">
+          Connect your local AI model (Ollama, LM Studio, vLLM) for fast local question generation and evaluation, or enter a Cloud API Key (OpenAI / Gemini).
+          Settings are saved in your browser and used automatically across all practice sessions.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px;" class="ai-config-grid">
+          <label>
+            Local Model Base URL
+            <input id="baseUrlInput" name="no_autofill_base_url" type="text" placeholder="http://localhost:11434/v1" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
+          </label>
+          <label>
+            Local Model Name
+            <input id="modelNameInput" name="no_autofill_model_name" type="text" placeholder="qwen2.5-coder:3b" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
+          </label>
+          <label>
+            Cloud API Key (Optional)
+            <div style="display: flex; gap: 6px;">
+              <input id="apiKeyInput" name="no_autofill_api_key" type="password" placeholder="sk-... or AIza..." autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false">
+              <button id="toggleKeyBtn" class="button button-quiet button-compact" type="button" style="height:38px;">Show</button>
+            </div>
+          </label>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div class="api-status-line" id="apiStatusLine" style="margin-top: 0;">
+            <span class="api-status-dot" id="apiDot" style="background: var(--muted); box-shadow: 0 0 0 3px #e9edf3;"></span>
+            <span id="apiStatusText">No custom AI settings configured yet.</span>
+          </div>
+          <button id="saveKeyBtn" class="button button-primary button-compact" type="button">Save AI Settings</button>
+        </div>
+      </section>
+
+      <!-- ⏱️ Pro Focus & Study Productivity Suite -->
+      <section class="focus-timer-card">
+        <div class="timer-header">
+          <span class="timer-title">⏱️ Study Focus Suite</span>
+          <span class="timer-mode-badge mode-focus">🎯 Focus Session</span>
+        </div>
+        
+        <div class="timer-goal-box">
+          <input type="text" id="focusGoalInput" placeholder="🎯 Current Session Goal (e.g. Chapter 4 Data Structures)" spellcheck="false">
+        </div>
+
+        <div class="timer-display">
+          <div class="timer-display-time">25:00</div>
+          <div class="timer-progress-track">
+            <div class="timer-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="timer-presets">
+          <button class="timer-preset-btn active-preset" data-minutes="25" onclick="setPresetTimer(25)">25m Pomodoro</button>
+          <button class="timer-preset-btn" data-minutes="50" onclick="setPresetTimer(50)">50m Deep Focus</button>
+          <button class="timer-preset-btn" data-minutes="5" onclick="setPresetTimer(5)">5m Short Break</button>
+          <button class="timer-preset-btn" data-minutes="15" onclick="setPresetTimer(15)">15m Long Break</button>
+        </div>
+
+        <div class="custom-timer-box">
+          <input type="number" id="customTimerInput" placeholder="Custom minutes (e.g. 10, 30, 90)" min="1" max="300">
+          <button class="button button-quiet button-compact" type="button" onclick="setCustomTimer(document.getElementById('customTimerInput').value)">Set Custom</button>
+        </div>
+
+        <div class="timer-controls">
+          <button class="button button-primary timer-start-btn" type="button" onclick="startFocusTimer()">▶ Start Session</button>
+          <button class="button button-quiet timer-pause-btn" type="button" style="display:none;" onclick="pauseFocusTimer()">⏸ Pause</button>
+          <button class="button button-quiet" type="button" onclick="resetFocusTimer()">🔄 Reset</button>
+        </div>
+
+        <div class="timer-analytics-bar">
+          <span>📊</span>
+          <span class="timer-analytics-text">0 sessions completed today (0 mins total)</span>
+        </div>
+      </section>
+
+      <!-- Practice Library Card -->
+      <section class="panel action-card">
+        <div>
+          <span class="action-tag tag-blue">Personal prep</span>
+          <h2>AI Practice Arena</h2>
+          <p>Upload study notes, PDFs, or DOCX files and generate tailored practice question sessions with AI-powered semantic evaluation.</p>
+        </div>
+        <a href="/questions" class="button button-primary button-full">Enter Practice Library <span aria-hidden="true">→</span></a>
+      </section>
+
+      <!-- Join Assigned Viva Card -->
+      <section class="panel action-card">
+        <div>
+          <span class="action-tag tag-violet">Assigned assessment</span>
+          <h2>Join Assigned Viva</h2>
+          <p>Enter a share token or link from your teacher to start an official viva exam.</p>
+        </div>
+        <form id="joinVivaForm" class="join-form-inline" style="margin-top: auto;">
+          <input id="vivaTokenInput" type="text" placeholder="Enter share token or full link..." required autocomplete="off">
+          <button type="submit" class="button button-quiet">Go <span aria-hidden="true">→</span></button>
+        </form>
+        <p id="joinError" class="validation" style="margin-top: 6px; min-height: auto;"></p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const API_KEY_STORAGE = "viva_student_api_key";
+    const BASE_URL_STORAGE = "viva_student_base_url";
+    const MODEL_NAME_STORAGE = "viva_student_model_name";
+
+    const apiKeyInput = document.getElementById("apiKeyInput");
+    const baseUrlInput = document.getElementById("baseUrlInput");
+    const modelNameInput = document.getElementById("modelNameInput");
+    const toggleKeyBtn = document.getElementById("toggleKeyBtn");
+    const saveKeyBtn = document.getElementById("saveKeyBtn");
+    const apiDot = document.getElementById("apiDot");
+    const apiStatusText = document.getElementById("apiStatusText");
+    const statusDot = document.getElementById("statusDot");
+    const connectionStatus = document.getElementById("connectionStatus");
+    const joinVivaForm = document.getElementById("joinVivaForm");
+    const vivaTokenInput = document.getElementById("vivaTokenInput");
+    const joinError = document.getElementById("joinError");
+
+    function loadSavedKey() {
+      const savedKey = localStorage.getItem(API_KEY_STORAGE) || "";
+      const savedUrl = localStorage.getItem(BASE_URL_STORAGE) || "";
+      const savedModel = localStorage.getItem(MODEL_NAME_STORAGE) || "";
+
+      if (apiKeyInput) {
+        if (!savedKey && apiKeyInput.value) {
+          apiKeyInput.value = "";
+        } else if (savedKey) {
+          apiKeyInput.value = savedKey;
+        }
+      }
+      if (baseUrlInput) {
+        baseUrlInput.value = savedUrl;
+      }
+      if (modelNameInput) {
+        if (!savedModel && (modelNameInput.value.includes("@") || modelNameInput.value.includes("."))) {
+          modelNameInput.value = "";
+        } else if (savedModel) {
+          modelNameInput.value = savedModel;
+        } else {
+          modelNameInput.value = "";
+        }
+      }
+
+      updateKeyStatus(savedKey, savedUrl, savedModel);
+    }
+
+    function updateKeyStatus(key, url, model) {
+      if (url) {
+        apiDot.style.background = "var(--green)";
+        apiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
+        apiStatusText.textContent = `Local model active: ${model || 'default'} @ ${url}`;
+        apiStatusText.style.color = "var(--green)";
+      } else if (key) {
+        apiDot.style.background = "var(--green)";
+        apiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
+        apiStatusText.textContent = "Cloud API key active.";
+        apiStatusText.style.color = "var(--green)";
+      } else {
+        apiDot.style.background = "var(--muted)";
+        apiDot.style.boxShadow = "0 0 0 3px #e9edf3";
+        apiStatusText.textContent = "No custom AI settings configured yet.";
+        apiStatusText.style.color = "var(--muted)";
+      }
+    }
+
+    toggleKeyBtn.addEventListener("click", () => {
+      if (apiKeyInput.type === "password") {
+        apiKeyInput.type = "text";
+        toggleKeyBtn.textContent = "Hide";
+      } else {
+        apiKeyInput.type = "password";
+        toggleKeyBtn.textContent = "Show";
+      }
+    });
+
+    saveKeyBtn.addEventListener("click", () => {
+      const key = apiKeyInput.value.trim();
+      const url = baseUrlInput.value.trim();
+      const model = modelNameInput.value.trim();
+
+      if (key) localStorage.setItem(API_KEY_STORAGE, key);
+      else localStorage.removeItem(API_KEY_STORAGE);
+
+      if (url) localStorage.setItem(BASE_URL_STORAGE, url);
+      else localStorage.removeItem(BASE_URL_STORAGE);
+
+      if (model) localStorage.setItem(MODEL_NAME_STORAGE, model);
+      else localStorage.removeItem(MODEL_NAME_STORAGE);
+
+      updateKeyStatus(key, url, model);
+      checkHealth();
+    });
+
+    async function checkHealth() {
+      try {
+        const res = await fetch("/api/health", {
+          headers: getApiHeaders()
+        });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const hasUrl = !!localStorage.getItem(BASE_URL_STORAGE);
+        const hasKey = !!localStorage.getItem(API_KEY_STORAGE);
+
+        if (hasUrl) {
+          const modelName = localStorage.getItem(MODEL_NAME_STORAGE) || "Local LLM";
+          connectionStatus.textContent = `Local AI (${modelName})`;
+          statusDot.style.background = "var(--green)";
+          statusDot.style.boxShadow = "0 0 0 4px #d9f8eb";
+        } else if (data.ai_configured || hasKey) {
+          connectionStatus.textContent = "AI Connected";
+          statusDot.style.background = "var(--green)";
+          statusDot.style.boxShadow = "0 0 0 4px #d9f8eb";
+        } else {
+          connectionStatus.textContent = "AI Disconnected — Add Model";
+          statusDot.style.background = "var(--red)";
+          statusDot.style.boxShadow = "0 0 0 4px #fde8e8";
+        }
+      } catch {
+        connectionStatus.textContent = "Server Offline";
+        statusDot.style.background = "var(--red)";
+        statusDot.style.boxShadow = "0 0 0 4px #fde8e8";
+      }
+    }
+
+    function getApiHeaders() {
+      const headers = {};
+      const key = localStorage.getItem(API_KEY_STORAGE);
+      const url = localStorage.getItem(BASE_URL_STORAGE);
+      const model = localStorage.getItem(MODEL_NAME_STORAGE);
+      if (key) headers["X-Api-Key"] = key;
+      if (url) headers["X-Base-Url"] = url;
+      if (model) headers["X-Model-Name"] = model;
+      return headers;
+    }
+
+    // Join viva form
+    joinVivaForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      joinError.textContent = "";
+      let token = vivaTokenInput.value.trim();
+      if (!token) return;
+      if (token.includes("/viva/")) {
+        const parts = token.split("/viva/");
+        token = parts[parts.length - 1].split("/")[0].split("?")[0];
+      }
+      if (/^[A-Za-z0-9_-]+$/.test(token)) {
+        window.location.href = `/viva/${token}`;
+      } else {
+        joinError.textContent = "Please enter a valid share token or viva URL.";
+      }
+    });
+
+    loadSavedKey();
+    setTimeout(loadSavedKey, 80);
+    setTimeout(loadSavedKey, 250);
+    setTimeout(loadSavedKey, 600);
+    window.addEventListener("pageshow", loadSavedKey);
+    checkHealth();
+  </script>
+  <script src="/static/focus-timer.js"></script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Enter your assigned viva details to begin the exam.">
+  <title>Viva Entry · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .entry-card {
+      max-width: 580px;
+      margin: 40px auto;
+      padding: 36px;
+    }
+    .viva-meta-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 18px 0;
+      padding: 16px;
+      background: var(--canvas);
+      border-radius: 10px;
+      border: 1px solid var(--line);
+    }
+    .meta-box {
+      font-size: 13px;
+    }
+    .meta-box span {
+      display: block;
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .meta-box strong {
+      color: var(--ink);
+      font-size: 15px;
+    }
+    .instructions-box {
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--ink-soft);
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="entryStatus">Exam Portal</span>
+      </div>
+    </header>
+
+    <section class="panel entry-card">
+      <div class="panel-heading">
+        <span class="step-label">Intake</span>
+        <div>
+          <p class="eyebrow" id="subjectKicker">ASSIGNED ASSESSMENT</p>
+          <h2 id="vivaTitle">Loading Assessment...</h2>
+        </div>
+      </div>
+
+      <div class="viva-meta-info">
+        <div class="meta-box">
+          <span>Subject</span>
+          <strong id="vivaSubject">—</strong>
+        </div>
+        <div class="meta-box">
+          <span>Duration</span>
+          <strong id="vivaDuration">— mins</strong>
+        </div>
+      </div>
+
+      <div class="instructions-box" id="vivaInstructions">Loading instructions...</div>
+
+      <form id="intakeForm" class="join-form">
+        <div id="dynamicFieldsContainer" class="join-input-group" style="display: grid; gap: 14px;">
+          <!-- Dynamically added student fields -->
+        </div>
+
+        <div id="pinContainer" class="join-input-group" style="display: none; margin-top: 14px;">
+          <label>
+            Assessment PIN (Required)
+            <input id="vivaPin" type="password" placeholder="Enter PIN code...">
+          </label>
+        </div>
+
+        <!-- Question count selection for student range setting -->
+        <div id="studentSelectCountWrapper" class="join-input-group" style="display: none; margin-top: 14px;">
+          <label id="rangeLabel">
+            Choose how many questions to answer
+            <select id="vivaQuestionCountSelect">
+              <!-- Dynamically populated options -->
+            </select>
+          </label>
+        </div>
+
+        <button type="submit" class="button button-primary button-full" style="margin-top: 24px;">Start Assigned Viva <span aria-hidden="true">→</span></button>
+        <p id="intakeError" class="validation" style="margin-top: 10px; min-height: auto;"></p>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    // Grab the token from URL path. Split pathname: ["", "viva", "abc123token"]
+    const pathParts = window.location.pathname.split('/');
+    const shareToken = pathParts[2];
+
+    const vivaTitle = document.getElementById("vivaTitle");
+    const vivaSubject = document.getElementById("vivaSubject");
+    const vivaDuration = document.getElementById("vivaDuration");
+    const vivaInstructions = document.getElementById("vivaInstructions");
+    const dynamicFieldsContainer = document.getElementById("dynamicFieldsContainer");
+    const pinContainer = document.getElementById("pinContainer");
+    const vivaPin = document.getElementById("vivaPin");
+    const studentSelectCountWrapper = document.getElementById("studentSelectCountWrapper");
+    const rangeLabel = document.getElementById("rangeLabel");
+    const vivaQuestionCountSelect = document.getElementById("vivaQuestionCountSelect");
+    const intakeForm = document.getElementById("intakeForm");
+    const intakeError = document.getElementById("intakeError");
+
+    let studentFields = [];
+    let vivaConfig = null;
+
+    async function loadVivaConfig() {
+      try {
+        const res = await fetch(`/api/public/viva/${shareToken}`);
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to load assessment.");
+        }
+        const data = await res.json();
+        vivaConfig = data.viva;
+        renderVivaConfig();
+      } catch (err) {
+        vivaTitle.textContent = "Unavailable";
+        vivaInstructions.textContent = err.message || "This assessment could not be loaded. Please verify the URL.";
+        vivaInstructions.style.color = "var(--red)";
+        intakeForm.querySelector("button[type='submit']").disabled = true;
+      }
+    }
+
+    function renderVivaConfig() {
+      vivaTitle.textContent = vivaConfig.title;
+      vivaSubject.textContent = vivaConfig.subject;
+      vivaDuration.textContent = vivaConfig.duration_minutes;
+      vivaInstructions.textContent = vivaConfig.instructions || "Please complete the form below to begin your assigned exam. Take your time to answer each question carefully.";
+
+      // Display PIN field if required
+      if (vivaConfig.pin_required) {
+        pinContainer.style.display = "block";
+        vivaPin.required = true;
+      }
+
+      // Render Student Info Fields
+      studentFields = vivaConfig.student_fields || [];
+      dynamicFieldsContainer.innerHTML = studentFields.map(field => `
+        <label>
+          ${escapeHtml(field.label)} ${field.required ? '*' : '(optional)'}
+          <input type="text" id="field-${field.key}" name="${field.key}" ${field.required ? 'required' : ''} placeholder="Enter your ${escapeHtml(field.label.toLowerCase())}...">
+        </label>
+      `).join("");
+
+      // Question count range select
+      const qc = vivaConfig.question_count;
+      if (qc.mode === "student_select" && qc.max > qc.min) {
+        studentSelectCountWrapper.style.display = "block";
+        vivaQuestionCountSelect.innerHTML = "";
+        for (let i = qc.min; i <= qc.max; i++) {
+          const opt = document.createElement("option");
+          opt.value = i;
+          opt.textContent = `${i} Questions`;
+          if (i === qc.min) opt.selected = true;
+          vivaQuestionCountSelect.appendChild(opt);
+        }
+      }
+    }
+
+    intakeForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      intakeError.textContent = "";
+
+      // Gather student info payload
+      const studentData = {};
+      for (const field of studentFields) {
+        const input = document.getElementById(`field-${field.key}`);
+        if (input) {
+          studentData[field.key] = input.value.trim();
+        }
+      }
+
+      const postBody = {
+        student_data: studentData,
+        pin: vivaConfig.pin_required ? vivaPin.value.trim() : "",
+        question_count: vivaConfig.question_count.mode === "student_select" 
+          ? parseInt(vivaQuestionCountSelect.value) 
+          : vivaConfig.question_count.min
+      };
+
+      try {
+        const res = await fetch(`/api/public/viva/${shareToken}/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(postBody)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Could not begin attempt.");
+        
+        // Redirect to exam URL
+        window.location.href = data.exam_url;
+      } catch (err) {
+        intakeError.textContent = err.message;
+      }
+    });
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    loadVivaConfig();
+  </script>
+</body>
+</html>

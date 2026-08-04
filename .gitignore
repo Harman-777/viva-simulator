@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment secrets
+.env
+
+# System/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Database files
+*.db
+data/*.db
+
+# Logs
+*.log

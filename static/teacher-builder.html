@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Build or edit a structured classroom viva assessment.">
+  <title>Assessment Builder · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .builder-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .question-row {
+      border: 1px solid var(--line);
+      background: var(--canvas);
+      padding: 16px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .delete-question-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      color: var(--red);
+      background: transparent;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .bulk-area {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .bulk-area textarea {
+      min-height: 100px;
+      font-size: 13px;
+    }
+    .builder-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 32px;
+      border-top: 1px solid var(--line);
+      padding-top: 20px;
+    }
+    @media (max-width: 900px) {
+      .builder-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;">Back to Dashboard</a>
+    </header>
+
+    <div style="margin-top: 24px;">
+      <p class="eyebrow" id="builderActionLabel">Viva Authoring Workflow</p>
+      <h1 id="builderTitle" style="margin: 6px 0 0; font-size: 32px; font-weight: 900; letter-spacing: -0.04em;">Create Assessment</h1>
+    </div>
+
+    <form id="builderForm">
+      <div class="builder-grid">
+        <!-- Left Panel: General Configurations -->
+        <section class="panel">
+          <div class="panel-heading">
+            <span class="step-label">01</span>
+            <div>
+              <p class="eyebrow">Viva Parameters</p>
+              <h2>Settings & Instructions</h2>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 14px; margin-top: 14px;">
+            <label>
+              Viva Assessment Title
+              <input id="vivaTitle" type="text" placeholder="e.g. Midterm Python Programming Viva" required>
+            </label>
+
+            <div class="field-row">
+              <label>
+                Subject Name
+                <input id="vivaSubject" type="text" placeholder="e.g. Python" required>
+              </label>
+              <label>
+                Duration (minutes)
+                <input id="vivaDuration" type="number" min="1" max="300" value="20" required>
+              </label>
+            </div>
+
+            <label>
+              Student Instructions / Syllabus guidelines
+              <textarea id="vivaInstructions" placeholder="Write exam guidelines, instructions, topics covered, or rules here..."></textarea>
+            </label>
+
+            <div class="field-row">
+              <label>
+                Question Ordering
+                <select id="vivaOrdering">
+                  <option value="fixed" selected>Fixed (Original Position Order)</option>
+                  <option value="shuffled">Shuffled (Randomize order per student)</option>
+                  <option value="random">Random Pool (Sample subset from pool)</option>
+                </select>
+              </label>
+              <label>
+                Question count mode
+                <select id="vivaCountMode">
+                  <option value="fixed" selected>Fixed Count (Default)</option>
+                  <option value="student_select">Student Range Selection</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="field-row" id="questionCountRangeWrapper">
+              <label>
+                Minimum Questions
+                <input id="vivaCountMin" type="number" min="1" max="100" value="5">
+              </label>
+              <label id="countMaxLabel">
+                Maximum Questions
+                <input id="vivaCountMax" type="number" min="1" max="100" value="5">
+              </label>
+            </div>
+
+            <!-- Student intake fields checklist -->
+            <div style="margin-top: 10px;">
+              <span style="font-size:12px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:8px;">Mandatory Student Intake Fields</span>
+              <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px;">
+                <label class="toggle-row" style="cursor: default;"><input type="checkbox" checked disabled> <span>Full Name</span></label>
+                <label class="toggle-row" style="cursor: default;"><input type="checkbox" checked disabled> <span>Roll Number</span></label>
+                <label class="toggle-row"><input type="checkbox" id="fieldClass" checked> <span>Class / Year</span></label>
+                <label class="toggle-row"><input type="checkbox" id="fieldSection" checked> <span>Section</span></label>
+                <label class="toggle-row"><input type="checkbox" id="fieldEmail"> <span>Email Address</span></label>
+              </div>
+            </div>
+
+            <label class="toggle-row" style="margin-top: 8px;">
+              <input type="checkbox" id="vivaShowResults" checked>
+              <span>Release marks and AI feedback to students immediately upon submission</span>
+            </label>
+          </div>
+        </section>
+
+        <!-- Right Panel: Questions Workspace -->
+        <section class="panel">
+          <div class="panel-heading" style="margin-bottom:14px;">
+            <span class="step-label">02</span>
+            <div>
+              <p class="eyebrow">Questions List</p>
+              <h2>Assessment Items</h2>
+            </div>
+          </div>
+
+          <!-- AI Draft Question Generator -->
+          <details class="ai-settings" style="margin-bottom: 20px; border-color: #f3efff; background: #faf9ff;">
+            <summary style="color: var(--violet);"><span class="settings-icon" style="color:var(--violet);">✦</span> AI Draft Generator <span class="summary-helper" style="color: #9f88ec;">Auto-generate drafts</span></summary>
+            <div class="ai-settings-content">
+              <p style="color: #7b62cc;">Upload reference notes or a curriculum file to let OpenAI generate draft questions.</p>
+              <label>
+                Choose Reference File
+                <input type="file" id="aiDraftFile" accept=".pdf,.docx,.txt,.md">
+              </label>
+              <div class="field-row">
+                <label>
+                  Difficulty Level
+                  <select id="aiDraftLevel">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                  </select>
+                </label>
+                <label>
+                  Question Count
+                  <input id="aiDraftCount" type="number" min="1" max="30" value="5">
+                </label>
+              </div>
+              <div class="field-row" style="margin-top:8px;">
+                <label>
+                  Base URL <span style="color:var(--muted); font-weight:400;">(local model)</span>
+                  <input id="aiDraftBaseUrl" type="text" placeholder="http://localhost:11434/v1">
+                </label>
+                <label>
+                  Model Name
+                  <input id="aiDraftModelName" type="text" placeholder="qwen2.5-coder-3b">
+                </label>
+              </div>
+              <button id="aiDraftGenerateBtn" class="button button-quiet button-compact" style="color:var(--violet); border-color:#dcd1ff; margin-top:8px;" type="button">Generate Draft Rows</button>
+              <p id="aiDraftStatus" style="font-size:12px; margin:0;" class="note-status"></p>
+            </div>
+          </details>
+
+          <!-- Bulk upload -->
+          <details class="ai-settings" style="margin-bottom: 20px;">
+            <summary><span class="settings-icon">✍</span> Bulk Paste Questions</summary>
+            <div class="ai-settings-content">
+              <p>Paste questions (one per line). They will be added to the assessment pool.</p>
+              <textarea id="bulkQuestionsInput" placeholder="Explain the difference between a class and an object.&#10;What is inheritance in OOP?"></textarea>
+              <button id="bulkAddBtn" class="button button-quiet button-compact" type="button">Add to List</button>
+            </div>
+          </details>
+
+          <div id="questionsContainer">
+            <!-- Questions rows are rendered here -->
+          </div>
+
+          <button id="addManualQuestionBtn" class="button button-quiet button-full" type="button" style="margin-top: 10px;">+ Add Question Manually</button>
+        </section>
+      </div>
+
+      <div class="builder-actions">
+        <span id="saveError" class="validation" style="margin-right: auto; align-self: center;"></span>
+        <button id="cancelBtn" class="button button-quiet" type="button">Cancel</button>
+        <button id="saveAssessmentBtn" class="button button-primary" type="submit">Save Assessment Viva <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </main>
+
+  <script>
+    // Check if editing
+    const urlParams = new URLSearchParams(window.location.search);
+    const assessmentId = urlParams.get("id");
+
+    const teacherDisplay = document.getElementById("teacherDisplay");
+    const builderActionLabel = document.getElementById("builderActionLabel");
+    const builderTitle = document.getElementById("builderTitle");
+    const builderForm = document.getElementById("builderForm");
+
+    const vivaTitle = document.getElementById("vivaTitle");
+    const vivaSubject = document.getElementById("vivaSubject");
+    const vivaDuration = document.getElementById("vivaDuration");
+    const vivaInstructions = document.getElementById("vivaInstructions");
+    const vivaOrdering = document.getElementById("vivaOrdering");
+    const vivaCountMode = document.getElementById("vivaCountMode");
+    const vivaCountMin = document.getElementById("vivaCountMin");
+    const vivaCountMax = document.getElementById("vivaCountMax");
+    const vivaShowResults = document.getElementById("vivaShowResults");
+    const fieldClass = document.getElementById("fieldClass");
+    const fieldSection = document.getElementById("fieldSection");
+    const fieldEmail = document.getElementById("fieldEmail");
+
+    const aiDraftFile = document.getElementById("aiDraftFile");
+    const aiDraftLevel = document.getElementById("aiDraftLevel");
+    const aiDraftCount = document.getElementById("aiDraftCount");
+    const aiDraftGenerateBtn = document.getElementById("aiDraftGenerateBtn");
+    const aiDraftStatus = document.getElementById("aiDraftStatus");
+    
+    const aiDraftBaseUrl = document.getElementById("aiDraftBaseUrl");
+    const aiDraftModelName = document.getElementById("aiDraftModelName");
+    if (aiDraftBaseUrl) aiDraftBaseUrl.value = localStorage.getItem("viva_teacher_base_url") || "";
+    if (aiDraftModelName) aiDraftModelName.value = localStorage.getItem("viva_teacher_model_name") || "";
+
+    const bulkQuestionsInput = document.getElementById("bulkQuestionsInput");
+    const bulkAddBtn = document.getElementById("bulkAddBtn");
+
+    const questionsContainer = document.getElementById("questionsContainer");
+    const addManualQuestionBtn = document.getElementById("addManualQuestionBtn");
+    const cancelBtn = document.getElementById("cancelBtn");
+    const saveError = document.getElementById("saveError");
+
+    let teacher = null;
+    let questionsList = []; // Array of { question, reference_answer, marks }
+
+    // Toggle count max input based on count mode
+    vivaCountMode.addEventListener("change", () => {
+      if (vivaCountMode.value === "fixed") {
+        document.getElementById("countMaxLabel").style.opacity = "0.5";
+        vivaCountMax.disabled = true;
+        // Keep them in sync in UI
+        vivaCountMax.value = vivaCountMin.value;
+      } else {
+        document.getElementById("countMaxLabel").style.opacity = "1";
+        vivaCountMax.disabled = false;
+      }
+    });
+    vivaCountMin.addEventListener("input", () => {
+      if (vivaCountMode.value === "fixed") {
+        vivaCountMax.value = vivaCountMin.value;
+      }
+    });
+
+    async function checkLogin() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!data.teacher) {
+          window.location.href = "/teacher/login";
+          return;
+        }
+        teacher = data.teacher;
+        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
+        
+        if (assessmentId) {
+          loadAssessmentDetails();
+        } else {
+          // Initialize with 3 empty questions
+          addQuestionRow();
+          addQuestionRow();
+          addQuestionRow();
+          vivaCountMode.dispatchEvent(new Event("change"));
+        }
+      } catch {
+        window.location.href = "/teacher/login";
+      }
+    }
+
+    async function loadAssessmentDetails() {
+      builderActionLabel.textContent = "Modify assessment parameters";
+      builderTitle.textContent = "Edit Assessment";
+      try {
+        const res = await fetch(`/api/teacher/assessments/${assessmentId}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const a = data.assessment;
+
+        vivaTitle.value = a.title;
+        vivaSubject.value = a.subject;
+        vivaDuration.value = a.duration_minutes;
+        vivaInstructions.value = a.instructions;
+        vivaOrdering.value = a.question_ordering || "fixed";
+        vivaCountMode.value = a.question_count.mode;
+        vivaCountMin.value = a.question_count.min;
+        vivaCountMax.value = a.question_count.max;
+        vivaShowResults.checked = a.show_results;
+
+        // Restore checklist
+        const sFields = a.student_fields || [];
+        fieldClass.checked = sFields.some(f => f.key === "class");
+        fieldSection.checked = sFields.some(f => f.key === "section");
+        fieldEmail.checked = sFields.some(f => f.key === "email");
+
+        // Load questions
+        questionsList = a.questions || [];
+        renderQuestions();
+        vivaCountMode.dispatchEvent(new Event("change"));
+      } catch {
+        saveError.textContent = "Failed to load assessment details.";
+      }
+    }
+
+    function renderQuestions() {
+      questionsContainer.innerHTML = "";
+      if (questionsList.length === 0) {
+        questionsContainer.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;" id="emptyQuestions">Add at least one question to the assessment pool.</p>`;
+        return;
+      }
+
+      questionsList.forEach((q, index) => {
+        const row = document.createElement("div");
+        row.className = "question-row";
+        row.innerHTML = `
+          <button type="button" class="delete-question-btn" onclick="deleteQuestion(${index})">Remove</button>
+          <div style="font-weight: 750; font-size:12px; color:var(--muted); margin-bottom:8px;">QUESTION ${index + 1}</div>
+          <div style="display: grid; gap: 10px;">
+            <label>
+              Question Text
+              <input type="text" class="q-text-input" value="${escapeHtml(q.question)}" required placeholder="e.g. Describe the purpose of key-value databases.">
+            </label>
+            <label>
+              Accepted reference answers / keywords (Guides the AI evaluation)
+              <textarea class="q-ref-input" style="min-height:70px;" placeholder="Describe expected answer details, keywords, or definitions...">${escapeHtml(q.reference_answer || "")}</textarea>
+            </label>
+            <div style="display: grid; grid-template-columns: 1fr; width: 140px;">
+              <label>
+                Marks allocation
+                <input type="number" class="q-marks-input" min="1" max="100" value="${q.marks || 10}" required>
+              </label>
+            </div>
+          </div>
+        `;
+        questionsContainer.appendChild(row);
+      });
+    }
+
+    window.deleteQuestion = function (index) {
+      syncQuestionsFromDOM();
+      questionsList.splice(index, 1);
+      renderQuestions();
+    };
+
+    function addQuestionRow(questionVal = "", refVal = "", marksVal = 10) {
+      syncQuestionsFromDOM();
+      questionsList.push({
+        question: questionVal,
+        reference_answer: refVal,
+        marks: marksVal
+      });
+      renderQuestions();
+    }
+
+    function syncQuestionsFromDOM() {
+      const rows = questionsContainer.querySelectorAll(".question-row");
+      const newList = [];
+      rows.forEach((row) => {
+        const textInput = row.querySelector(".q-text-input");
+        const refInput = row.querySelector(".q-ref-input");
+        const marksInput = row.querySelector(".q-marks-input");
+        
+        if (textInput && refInput && marksInput) {
+          newList.push({
+            question: textInput.value.trim(),
+            reference_answer: refInput.value.trim(),
+            marks: parseFloat(marksInput.value) || 10
+          });
+        }
+      });
+      questionsList = newList;
+    }
+
+    addManualQuestionBtn.addEventListener("click", () => {
+      addQuestionRow();
+      // Scroll to bottom of list
+      window.scrollTo(0, document.body.scrollHeight);
+    });
+
+    // Bulk Paste
+    bulkAddBtn.addEventListener("click", () => {
+      const text = bulkQuestionsInput.value.trim();
+      if (!text) return;
+      const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+      lines.forEach(line => {
+        addQuestionRow(line, "", 10);
+      });
+      bulkQuestionsInput.value = "";
+      alert(`Added ${lines.length} questions from text input.`);
+    });
+
+    // AI Draft Generator
+    aiDraftGenerateBtn.addEventListener("click", async () => {
+      aiDraftStatus.textContent = "";
+      const file = aiDraftFile.files[0];
+      const count = parseInt(aiDraftCount.value);
+
+      if (!file) {
+        aiDraftStatus.textContent = "Please choose a reference file.";
+        aiDraftStatus.className = "note-status note-status-warn";
+        return;
+      }
+      if (isNaN(count) || count < 1 || count > 30) {
+        aiDraftStatus.textContent = "Choose count between 1 and 30.";
+        aiDraftStatus.className = "note-status note-status-warn";
+        return;
+      }
+
+      aiDraftGenerateBtn.disabled = true;
+      aiDraftStatus.textContent = "Reading file...";
+      aiDraftStatus.className = "note-status note-status-ok";
+      aiDraftStatus.style.color = "var(--blue)";
+
+      const reader = new FileReader();
+      reader.onload = async function() {
+        const base64Content = reader.result.split(",")[1];
+        aiDraftStatus.textContent = "Uploading context...";
+
+        try {
+          const ownerKey = `teacher_${teacher.id}`;
+          const teacherKey = localStorage.getItem("viva_teacher_api_key") || "";
+          const teacherBaseUrl = (aiDraftBaseUrl ? aiDraftBaseUrl.value.trim() : "") || localStorage.getItem("viva_teacher_base_url") || "";
+          const teacherModelName = (aiDraftModelName ? aiDraftModelName.value.trim() : "") || localStorage.getItem("viva_teacher_model_name") || "";
+          
+          // Save back to local storage for convenience
+          if (teacherBaseUrl) localStorage.setItem("viva_teacher_base_url", teacherBaseUrl);
+          if (teacherModelName) localStorage.setItem("viva_teacher_model_name", teacherModelName);
+          
+          const headers = { 
+            "Content-Type": "application/json",
+          };
+          if (teacherKey) headers["X-Api-Key"] = teacherKey;
+          if (teacherBaseUrl) headers["X-Base-Url"] = teacherBaseUrl;
+          if (teacherModelName) headers["X-Model-Name"] = teacherModelName;
+
+          // 1. Upload file
+          const uploadRes = await fetch("/api/library/materials", {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({
+              owner_key: ownerKey,
+              file_name: file.name,
+              mime_type: file.type || "application/octet-stream",
+              content_base64: base64Content
+            })
+          });
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
+
+          aiDraftStatus.textContent = "Generating question drafts via AI...";
+          // 2. Generate questions
+          const genRes = await fetch("/api/library/generate", {
+            method: "POST",
+            headers: headers,
+            body: JSON.stringify({
+              owner_key: ownerKey,
+              material_ids: [uploadData.material.id],
+              level: aiDraftLevel.value,
+              question_count: count
+            })
+          });
+          const genData = await genRes.json();
+          if (!genRes.ok) throw new Error(genData.error || "Generation failed");
+
+          // 3. Inject rows
+          syncQuestionsFromDOM();
+          const generated = genData.questions || [];
+          generated.forEach(q => {
+            questionsList.push({
+              question: q.question,
+              reference_answer: q.reference_answer,
+              marks: 10
+            });
+          });
+          renderQuestions();
+          
+          aiDraftStatus.textContent = `Generated ${generated.length} questions. Check details below!`;
+          aiDraftStatus.style.color = "var(--green)";
+        } catch (err) {
+          aiDraftStatus.textContent = err.message || "Draft generation failed.";
+          aiDraftStatus.className = "note-status note-status-warn";
+        } finally {
+          aiDraftGenerateBtn.disabled = false;
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Form Submission Save
+    builderForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      saveError.textContent = "";
+      syncQuestionsFromDOM();
+
+      if (questionsList.length === 0) {
+        saveError.textContent = "Please add at least one question to the assessment pool.";
+        return;
+      }
+
+      const minCount = parseInt(vivaCountMin.value);
+      const maxCount = parseInt(vivaCountMax.value);
+      if (questionsList.length < maxCount) {
+        saveError.textContent = `You have only added ${questionsList.length} questions. You need at least ${maxCount} questions to cover your maximum question count.`;
+        return;
+      }
+
+      const studentFields = [
+        { key: "name", label: "Full Name", required: true },
+        { key: "roll_no", label: "Roll Number", required: true }
+      ];
+      if (fieldClass.checked) studentFields.push({ key: "class", label: "Class / Year", required: true });
+      if (fieldSection.checked) studentFields.push({ key: "section", label: "Section", required: true });
+      if (fieldEmail.checked) studentFields.push({ key: "email", label: "Email Address", required: true });
+
+      const payload = {
+        title: vivaTitle.value.trim(),
+        subject: vivaSubject.value.trim(),
+        instructions: vivaInstructions.value.trim(),
+        duration_minutes: parseInt(vivaDuration.value),
+        question_count_mode: vivaCountMode.value,
+        question_count_min: minCount,
+        question_count_max: maxCount,
+        question_ordering: vivaOrdering.value,
+        student_fields: studentFields,
+        show_results: vivaShowResults.checked,
+        questions: questionsList
+      };
+
+      const url = assessmentId ? `/api/teacher/assessments/${assessmentId}` : "/api/teacher/assessments";
+      const method = assessmentId ? "PUT" : "POST";
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Save failed.");
+        
+        window.location.href = "/teacher";
+      } catch (err) {
+        saveError.textContent = err.message;
+      }
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      window.location.href = "/teacher";
+    });
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    checkLogin();
+  </script>
+</body>
+</html>

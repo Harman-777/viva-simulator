@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Share and publish your assigned assessment link.">
+  <title>Assessment Share Panel · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .share-card {
+      max-width: 580px;
+      margin: 40px auto;
+      padding: 36px;
+    }
+    .link-display-group {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 14px;
+      margin-bottom: 24px;
+    }
+    .link-display-group input {
+      background: var(--canvas);
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--canvas);
+      margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;">Back to Dashboard</a>
+    </header>
+
+    <section class="panel share-card" style="margin-top: 36px;">
+      <div class="panel-heading">
+        <span class="step-label">Link</span>
+        <div>
+          <p class="eyebrow" id="subjectKicker">PUBLISH WORKFLOW</p>
+          <h2 id="vivaTitle">Assessment Title</h2>
+        </div>
+      </div>
+      <p style="font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 20px;">Publishing creates a secure entry link. Students will fill in their info and take the exam online.</p>
+
+      <!-- Active Share Link -->
+      <div class="link-display-group">
+        <input id="shareLinkInput" type="text" readonly value="http://localhost:8000/viva/loading...">
+        <button id="copyLinkBtn" class="button button-primary" type="button">Copy Link</button>
+      </div>
+
+      <!-- Controls Form -->
+      <form id="shareSettingsForm">
+        <div class="control-row">
+          <div>
+            <strong style="display:block; font-size:14px; color:var(--ink);">Active Sharing Link</strong>
+            <span style="font-size:11px; color:var(--muted)">Revoke access instantly by turning off</span>
+          </div>
+          <label class="toggle-row" style="gap: 0;">
+            <input type="checkbox" id="linkActiveCheckbox" checked style="width:20px; min-height:20px;">
+          </label>
+        </div>
+
+        <div style="display:grid; gap:14px; margin-bottom:24px;">
+          <div class="field-row">
+            <label>
+              Optional Access PIN (Min 4 chars)
+              <input id="vivaPin" type="text" placeholder="e.g. 1234 (Leave blank if none)" autocomplete="off">
+            </label>
+            <label>
+              Optional Expiry Date
+              <input id="vivaExpiry" type="datetime-local">
+            </label>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button id="saveShareBtn" class="button button-primary" type="submit" style="flex-grow: 1;">Save Configuration</button>
+          <button id="whatsappShareBtn" class="button button-quiet" type="button" style="display: inline-flex; gap: 8px;">
+            <span>Share via WhatsApp</span>
+          </button>
+        </div>
+        
+        <p id="shareStatus" class="note-status" style="margin-top: 12px; text-align: center; min-height: 18px;"></p>
+
+        <!-- Regenerate option -->
+        <div style="margin-top: 28px; border-top:1px solid var(--line); padding-top:20px; text-align: center;">
+          <p style="font-size:12px; color:var(--muted); margin-bottom:12px;">Need to restrict access and generate a brand-new token URL?</p>
+          <button id="regenerateBtn" class="button button-quiet button-compact" style="color:var(--red); border-color:#f2c7c2; background:#fff7f6;" type="button">Regenerate Share Link</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const assessmentId = urlParams.get("id");
+
+    const teacherDisplay = document.getElementById("teacherDisplay");
+    const vivaTitle = document.getElementById("vivaTitle");
+    const subjectKicker = document.getElementById("subjectKicker");
+    const shareLinkInput = document.getElementById("shareLinkInput");
+    const copyLinkBtn = document.getElementById("copyLinkBtn");
+    
+    const shareSettingsForm = document.getElementById("shareSettingsForm");
+    const linkActiveCheckbox = document.getElementById("linkActiveCheckbox");
+    const vivaPin = document.getElementById("vivaPin");
+    const vivaExpiry = document.getElementById("vivaExpiry");
+    
+    const saveShareBtn = document.getElementById("saveShareBtn");
+    const whatsappShareBtn = document.getElementById("whatsappShareBtn");
+    const regenerateBtn = document.getElementById("regenerateBtn");
+    const shareStatus = document.getElementById("shareStatus");
+
+    let teacher = null;
+    let shareConfig = null;
+    let vivaDetails = null;
+
+    async function checkLogin() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!data.teacher) {
+          window.location.href = "/teacher/login";
+          return;
+        }
+        teacher = data.teacher;
+        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
+        
+        if (assessmentId) {
+          loadAssessmentDetails();
+        } else {
+          window.location.href = "/teacher";
+        }
+      } catch {
+        window.location.href = "/teacher/login";
+      }
+    }
+
+    async function loadAssessmentDetails() {
+      try {
+        const res = await fetch(`/api/teacher/assessments/${assessmentId}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        vivaDetails = data.assessment;
+        
+        vivaTitle.textContent = vivaDetails.title;
+        subjectKicker.textContent = vivaDetails.subject.toUpperCase() + " · SHARING SETTINGS";
+
+        shareConfig = vivaDetails.share;
+        renderShareConfig();
+      } catch {
+        shareStatus.textContent = "Could not load sharing configuration.";
+        shareStatus.style.color = "var(--red)";
+      }
+    }
+
+    function renderShareConfig() {
+      if (shareConfig) {
+        const fullLink = `${window.location.protocol}//${window.location.host}/viva/${shareConfig.token}`;
+        shareLinkInput.value = fullLink;
+        linkActiveCheckbox.checked = shareConfig.is_active;
+        
+        if (shareConfig && shareConfig.expires_at) {
+          // Slice timezone info if ISO format to match datetime-local input value format
+          vivaExpiry.value = String(shareConfig.expires_at).slice(0, 16);
+        } else {
+          vivaExpiry.value = "";
+        }
+      } else {
+        // Not published yet, let's prefill default link structure or placeholder
+        shareLinkInput.value = "Link will be generated upon activation.";
+        linkActiveCheckbox.checked = false;
+      }
+    }
+
+    // Save Settings
+    shareSettingsForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      shareStatus.textContent = "";
+      saveShareBtn.disabled = true;
+
+      const payload = {
+        is_active: linkActiveCheckbox.checked,
+        pin: vivaPin.value.trim(),
+        expires_at: vivaExpiry.value ? new Date(vivaExpiry.value).toISOString() : ""
+      };
+
+      try {
+        const res = await fetch(`/api/teacher/assessments/${assessmentId}/publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to update link.");
+        
+        shareConfig = data.share;
+        renderShareConfig();
+        
+        shareStatus.textContent = "Sharing settings updated successfully!";
+        shareStatus.style.color = "var(--green)";
+      } catch (err) {
+        shareStatus.textContent = err.message;
+        shareStatus.style.color = "var(--red)";
+      } finally {
+        saveShareBtn.disabled = false;
+      }
+    });
+
+    // Copy Link Action
+    copyLinkBtn.addEventListener("click", () => {
+      if (shareLinkInput.value.startsWith("http")) {
+        navigator.clipboard.writeText(shareLinkInput.value);
+        const originalText = copyLinkBtn.textContent;
+        copyLinkBtn.textContent = "Copied!";
+        setTimeout(() => { copyLinkBtn.textContent = originalText; }, 1500);
+      }
+    });
+
+    // WhatsApp Share Shortcut
+    whatsappShareBtn.addEventListener("click", () => {
+      if (!shareLinkInput.value.startsWith("http")) {
+        alert("Please activate sharing and save settings first.");
+        return;
+      }
+      const title = vivaDetails.title;
+      const link = shareLinkInput.value;
+      const pinCode = vivaPin.value.trim();
+      
+      let message = `Hi students! Please click the link to start your Assigned Viva for ${title}: ${link}`;
+      if (pinCode) {
+        message += `\nAccess PIN: ${pinCode}`;
+      }
+      
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, "_blank");
+    });
+
+    // Regenerate Share Link
+    regenerateBtn.addEventListener("click", async () => {
+      if (!confirm("Warning: Regenerating the link will deactivate the current token. Any student using the previous link will lose access immediately. Proceed?")) return;
+      
+      shareStatus.textContent = "";
+      regenerateBtn.disabled = true;
+
+      const payload = {
+        is_active: linkActiveCheckbox.checked,
+        pin: vivaPin.value.trim(),
+        expires_at: vivaExpiry.value ? new Date(vivaExpiry.value).toISOString() : "",
+        regenerate_token: true
+      };
+
+      try {
+        const res = await fetch(`/api/teacher/assessments/${assessmentId}/publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to regenerate link.");
+
+        shareConfig = data.share;
+        renderShareConfig();
+        shareStatus.textContent = "A new share link token has been generated!";
+        shareStatus.style.color = "var(--green)";
+      } catch (err) {
+        shareStatus.textContent = err.message;
+        shareStatus.style.color = "var(--red)";
+      } finally {
+        regenerateBtn.disabled = false;
+      }
+    });
+
+    checkLogin();
+  </script>
+</body>
+</html>

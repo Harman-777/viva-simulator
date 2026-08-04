@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Viva submission confirmation and feedback.">
+  <title>Assessment Complete · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .complete-card {
+      max-width: 680px;
+      margin: 40px auto;
+      padding: 36px;
+      text-align: center;
+    }
+    .check-icon {
+      font-size: 52px;
+      color: var(--green);
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+    .result-release-panel {
+      text-align: left;
+      margin-top: 32px;
+      border-top: 1px solid var(--line);
+      padding-top: 24px;
+    }
+    .feedback-list {
+      display: grid;
+      gap: 16px;
+      margin-top: 18px;
+    }
+    .feedback-q-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 18px;
+      background: var(--canvas);
+    }
+    .feedback-q-card h3 {
+      font-size: 15px;
+      margin-bottom: 8px;
+      font-weight: 750;
+    }
+    .feedback-q-card p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: var(--ink-soft);
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="completeStatus">Completed</span>
+      </div>
+    </header>
+
+    <section class="panel complete-card">
+      <span class="check-icon" id="successIcon">✓</span>
+      <h2 id="completeHeading" style="font-size: 28px; font-weight: 800; letter-spacing: -0.04em;">Assessment Submitted</h2>
+      <p id="completeMeta" style="color: var(--muted); font-size: 14px; margin-top: 8px;">Attempt saved successfully. Thank you for practicing.</p>
+
+      <!-- Restricted View (Default) -->
+      <div id="restrictedView" style="margin-top: 20px; line-height: 1.6; color: var(--ink-soft); font-size: 14px;">
+        Your answers have been stored and sent to your instructor for review. Score release and AI feedback will be visible once published by the teacher.
+        <div style="margin-top: 28px;">
+          <a href="/" class="button button-quiet">Back to Home</a>
+        </div>
+      </div>
+
+      <!-- Released View (Scores/Feedback) -->
+      <div id="releasedView" class="result-release-panel" style="display: none;">
+        <h3 style="font-size: 18px; font-weight: 750; margin-bottom: 12px; letter-spacing:-0.02em;">Review & Feedback Breakdown</h3>
+        <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 20px;">The instructor has released the score summary. Here is a review of your semantic assessment:</p>
+
+        <div class="dashboard-grid" style="margin-top: 0; margin-bottom: 24px; grid-template-columns: 1fr 1fr;">
+          <article class="metric metric-score" style="min-height: 110px; padding: 14px;">
+            <span class="metric-label">Grade Score</span>
+            <strong id="finalScoreDisplay" style="margin: 6px 0;">—</strong>
+            <small>Points earned</small>
+          </article>
+          <article class="metric" style="min-height: 110px; padding: 14px;">
+            <span class="metric-label">Performance</span>
+            <strong id="percentageDisplay" style="margin: 6px 0;">—%</strong>
+            <small id="readinessDisplay">Calculated readiness</small>
+          </article>
+        </div>
+
+        <div class="feedback-list" id="feedbackList">
+          <!-- Question cards -->
+        </div>
+
+        <div style="margin-top: 32px; text-align: center;">
+          <a href="/" class="button button-quiet">Exit Exam Workspace</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const attemptToken = urlParams.get("attempt");
+
+    const completeHeading = document.getElementById("completeHeading");
+    const completeMeta = document.getElementById("completeMeta");
+    const restrictedView = document.getElementById("restrictedView");
+    const releasedView = document.getElementById("releasedView");
+    const successIcon = document.getElementById("successIcon");
+
+    const finalScoreDisplay = document.getElementById("finalScoreDisplay");
+    const percentageDisplay = document.getElementById("percentageDisplay");
+    const readinessDisplay = document.getElementById("readinessDisplay");
+    const feedbackList = document.getElementById("feedbackList");
+
+    async function loadResults() {
+      if (!attemptToken) {
+        completeHeading.textContent = "Invalid attempt";
+        completeMeta.textContent = "No valid attempt token was found in the URL.";
+        successIcon.textContent = "⚠";
+        successIcon.style.color = "var(--red)";
+        restrictedView.style.display = "block";
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/public/attempts/${attemptToken}`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const attempt = data.attempt;
+
+        completeHeading.textContent = `${attempt.title} Complete`;
+        completeMeta.textContent = `Completed by ${attempt.student.name || "Student"} (${attempt.student.roll_no || "N/A"})`;
+
+        if (attempt.show_results && attempt.state === "submitted") {
+          restrictedView.style.display = "none";
+          releasedView.style.display = "block";
+          renderReleasedFeedback(attempt);
+        } else {
+          restrictedView.style.display = "block";
+          releasedView.style.display = "none";
+        }
+      } catch {
+        // Fallback to basic message if fetch fails
+        restrictedView.style.display = "block";
+      }
+    }
+
+    function renderReleasedFeedback(attempt) {
+      let totalEarned = 0;
+      let totalMax = 0;
+      const qs = attempt.questions || [];
+
+      feedbackList.innerHTML = qs.map((q, index) => {
+        const score = q.final_score !== undefined ? q.final_score : 0;
+        totalEarned += score;
+        totalMax += q.marks;
+
+        const evalObj = q.evaluation || {};
+        const covered = evalObj.covered_concepts || [];
+        const missing = evalObj.missing_concepts || [];
+
+        const coveredTags = covered.map(c => `<span class="keyword-tag" style="background:#e6f6f0; color:var(--green); border-color:#d0ecd8;">${escapeHtml(c)}</span>`).join("");
+        const missingTags = missing.map(c => `<span class="keyword-tag" style="background:#feebe8; color:var(--red); border-color:#fcc8c2;">${escapeHtml(c)}</span>`).join("");
+
+        return `
+          <div class="feedback-q-card" style="text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <h3 style="margin:0;">Q${index + 1}: ${escapeHtml(q.question)}</h3>
+              <span class="score-badge ${score >= (q.marks * 0.75) ? 'badge-correct' : score >= (q.marks * 0.4) ? 'badge-partial' : 'badge-incorrect'}">${score} / ${q.marks}</span>
+            </div>
+            <p style="margin: 10px 0;"><strong>Your Answer:</strong> ${escapeHtml(q.answer || "(No response submitted)")}</p>
+            <p style="margin: 10px 0;"><strong>AI Feedback:</strong> ${escapeHtml(evalObj.feedback || evalObj.rationale || "Response evaluated.")}</p>
+            
+            <div style="margin: 10px 0;">
+              <strong style="font-size:12px; color:var(--muted)">Covered Concepts:</strong>
+              <div class="keywords-row" style="margin-top: 4px;">
+                ${coveredTags || '<span style="font-size:11px; color:var(--muted)">None</span>'}
+              </div>
+            </div>
+
+            <div style="margin: 10px 0;">
+              <strong style="font-size:12px; color:var(--muted)">Areas to Improve:</strong>
+              <div class="keywords-row" style="margin-top: 4px;">
+                ${missingTags || '<span style="font-size:11px; color:var(--muted)">None</span>'}
+              </div>
+            </div>
+
+            <p style="font-style:italic; border-top:1px solid rgba(0,0,0,0.05); padding-top:8px; margin-top:8px; font-size:12px;">
+              <strong>Model Answer Concept:</strong> ${escapeHtml(evalObj.model_answer || "N/A")}
+            </p>
+          </div>
+        `;
+      }).join("");
+
+      finalScoreDisplay.textContent = `${totalEarned.toFixed(1)} / ${totalMax}`;
+      const pct = totalMax > 0 ? Math.round((totalEarned / totalMax) * 100) : 0;
+      percentageDisplay.textContent = `${pct}%`;
+      
+      let readiness = "Needs Practice";
+      if (pct >= 85) readiness = "Excellent";
+      else if (pct >= 70) readiness = "Good";
+      else if (pct >= 50) readiness = "Developing";
+      
+      readinessDisplay.textContent = `Readiness Level: ${readiness}`;
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Personal AI preparation workspace. Upload materials, generate custom question sets, and practice.">
+  <title>Prep Workspace · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    /* Premium dual panel styling for prep space */
+    .prep-grid {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 20px;
+      margin-top: 24px;
+    }
+    .file-dropzone {
+      border: 2px dashed var(--line-strong);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      background: var(--canvas);
+      cursor: pointer;
+      transition: border-color 0.16s ease, background 0.16s ease;
+    }
+    .file-dropzone:hover {
+      border-color: var(--blue);
+      background: var(--soft-blue);
+    }
+    .file-dropzone input[type="file"] {
+      display: none;
+    }
+    .material-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .material-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--canvas);
+      font-size: 13px;
+    }
+    .material-name {
+      font-weight: 650;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .material-meta {
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .notes-list-editor {
+      margin-top: 18px;
+      display: grid;
+      gap: 12px;
+    }
+    .note-compose {
+      display: grid;
+      gap: 8px;
+    }
+    .note-compose textarea {
+      min-height: 90px;
+      font-size: 13px;
+    }
+    .note-saved-items {
+      display: grid;
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .note-item {
+      padding: 10px 12px;
+      border: 1px solid #ebe5ff;
+      border-radius: 8px;
+      background: #faf9ff;
+      font-size: 13px;
+      position: relative;
+    }
+    .note-item h4 {
+      margin: 0 0 4px 0;
+      color: var(--violet);
+      font-size: 12px;
+      font-weight: 750;
+    }
+    .note-item p {
+      margin: 0;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+    .note-item .delete-note-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: transparent;
+      border: none;
+      color: var(--red);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .practice-setup-card {
+      display: grid;
+      gap: 16px;
+    }
+    .practice-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 400px;
+    }
+    .score-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .badge-correct { color: var(--green); background: #e6f6f0; }
+    .badge-partial { color: var(--amber); background: #fdf5e6; }
+    .badge-incorrect { color: var(--red); background: #feebe8; }
+    @media (max-width: 900px) {
+      .prep-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a class="nav-link" href="/student">Dashboard</a>
+        <a class="nav-link nav-link-active" href="/questions">Practice Library</a>
+      </nav>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="libraryStatus">AI Practice Connected</span>
+      </div>
+    </header>
+
+    <section class="library-hero" style="padding-top: 36px; padding-bottom: 20px;">
+      <p class="eyebrow">Personal Practice Workspace</p>
+      <h1 id="library-title" style="margin: 8px 0 10px;">Private Study<br><span>& AI Practice.</span></h1>
+      <p>Upload study notes, PDFs, or DOCX files and generate tailored practice question sessions. Practice answering in the browser with meaning-based semantic evaluation.</p>
+    </section>
+
+    <!-- AI Model Settings Panel -->
+    <details class="ai-settings" style="margin-bottom: 18px;">
+      <summary>
+        <span class="settings-icon">🤖</span>
+        AI Model Settings (Local LLM / Cloud API)
+        <span class="summary-helper">▾</span>
+      </summary>
+      <div class="ai-settings-content">
+        <!-- Hidden trap inputs to prevent browser password managers from autofilling saved email/password into model name/API key -->
+        <div style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
+          <input type="text" name="fake_username_trap" tabindex="-1" autocomplete="username">
+          <input type="password" name="fake_password_trap" tabindex="-1" autocomplete="current-password">
+        </div>
+        <p>Configure a local AI model (Ollama `http://localhost:11434/v1`, LM Studio) for fast local practice, or enter a Cloud API key (OpenAI / Gemini).</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;" class="ai-config-grid">
+          <label>
+            Local Model Base URL
+            <input id="baseUrlInput" name="no_autofill_base_url" type="text" placeholder="http://localhost:11434/v1" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
+          </label>
+          <label>
+            Local Model Name
+            <input id="modelNameInput" name="no_autofill_model_name" type="text" placeholder="qwen2.5-coder:3b" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
+          </label>
+          <label>
+            Cloud API Key (Optional)
+            <div style="display: flex; gap: 6px;">
+              <input id="apiKeyInput" name="no_autofill_api_key" type="password" placeholder="sk-... or AIza..." autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false">
+              <button id="toggleKeyBtn" class="button button-quiet button-compact" type="button" style="height:38px;">Show</button>
+            </div>
+          </label>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650;">
+            <span id="apiDot" style="width:8px; height:8px; border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px #e9edf3; flex-shrink:0;"></span>
+            <span id="apiStatusText" style="color:var(--muted);">No custom AI settings configured.</span>
+          </div>
+          <button id="saveKeyBtn" class="button button-primary button-compact" type="button">Save AI Settings</button>
+        </div>
+      </div>
+    </details>
+
+    <!-- ⏱️ Pro Focus & Study Productivity Suite -->
+    <details class="ai-settings" style="margin-bottom: 18px;" open>
+      <summary style="font-weight:750;">
+        <span class="settings-icon">⏱️</span>
+        Study Focus Suite (Pomodoro & Custom Timer)
+        <span class="timer-mode-badge mode-focus" style="margin-left:auto; margin-right:12px;">🎯 Focus Session</span>
+      </summary>
+      <div style="padding: 16px;">
+        <div class="timer-goal-box" style="margin-bottom:12px;">
+          <input type="text" id="focusGoalInput" placeholder="🎯 Current Session Goal (e.g. Chapter 4 Data Structures)" spellcheck="false">
+        </div>
+
+        <div class="timer-display" style="margin-bottom:12px;">
+          <div class="timer-display-time">25:00</div>
+          <div class="timer-progress-track">
+            <div class="timer-progress-fill"></div>
+          </div>
+        </div>
+
+        <div class="timer-presets" style="margin-bottom:12px;">
+          <button class="timer-preset-btn active-preset" data-minutes="25" onclick="setPresetTimer(25)">25m Pomodoro</button>
+          <button class="timer-preset-btn" data-minutes="50" onclick="setPresetTimer(50)">50m Deep Focus</button>
+          <button class="timer-preset-btn" data-minutes="5" onclick="setPresetTimer(5)">5m Short Break</button>
+          <button class="timer-preset-btn" data-minutes="15" onclick="setPresetTimer(15)">15m Long Break</button>
+        </div>
+
+        <div class="custom-timer-box" style="margin-bottom:12px;">
+          <input type="number" id="customTimerInputLib" placeholder="Custom minutes (e.g. 10, 30, 90)" min="1" max="300">
+          <button class="button button-quiet button-compact" type="button" onclick="setCustomTimer(document.getElementById('customTimerInputLib').value)">Set Custom</button>
+        </div>
+
+        <div class="timer-controls">
+          <button class="button button-primary timer-start-btn" type="button" onclick="startFocusTimer()">▶ Start Session</button>
+          <button class="button button-quiet timer-pause-btn" type="button" style="display:none;" onclick="pauseFocusTimer()">⏸ Pause</button>
+          <button class="button button-quiet" type="button" onclick="resetFocusTimer()">🔄 Reset</button>
+        </div>
+
+        <div class="timer-analytics-bar">
+          <span>📊</span>
+          <span class="timer-analytics-text">0 sessions completed today (0 mins total)</span>
+        </div>
+      </div>
+    </details>
+
+    <div class="prep-grid">
+      <!-- Left Column: Study Materials & Private Notes -->
+      <section class="panel study-materials-panel">
+        <div class="panel-heading">
+          <span class="step-label">Files</span>
+          <div>
+            <p class="eyebrow">Workspace context</p>
+            <h2>My Study Material</h2>
+          </div>
+        </div>
+
+        <div class="file-dropzone" id="dropzone">
+          <span class="settings-icon">✦</span>
+          <p style="margin: 8px 0 4px; font-weight: 700; font-size: 13px;">Upload study files</p>
+          <p style="margin: 0; font-size: 11px; color: var(--muted);">Supports PDF, DOCX, TXT, MD up to 8MB</p>
+          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md">
+        </div>
+        <p id="uploadStatus" class="api-status" style="margin-top: 8px; font-size:12px;"></p>
+
+        <div class="material-list" id="materialList">
+          <div class="empty-state" style="min-height: 80px; padding: 16px; font-size:12px;">No study files uploaded yet.</div>
+        </div>
+
+        <div class="notes-list-editor">
+          <div class="panel-heading" style="margin-top: 14px; margin-bottom: 6px;">
+            <span class="step-label">Notes</span>
+            <div>
+              <p class="eyebrow">Quick recall</p>
+              <h2>My Private Notes</h2>
+            </div>
+          </div>
+
+          <div class="note-compose">
+            <textarea id="noteText" placeholder="Add study notes, bullet points, or concepts to guide your practice..."></textarea>
+            <button id="saveNoteBtn" class="button button-quiet button-compact" type="button">Add Study Note</button>
+          </div>
+
+          <div class="note-saved-items" id="noteSavedItems">
+            <!-- Saved notes rendered here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Question Generation & Live Practice -->
+      <section class="panel practice-panel" id="practicePanel">
+        <!-- Configuration Card (Visible before start) -->
+        <div id="setupView" class="practice-setup-card">
+          <div class="panel-heading">
+            <span class="step-label">Prep</span>
+            <div>
+              <p class="eyebrow">Generator configuration</p>
+              <h2>AI Practice Engine</h2>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--ink-soft); line-height: 1.5;">Choose a challenge difficulty and the number of questions. Questions will be generated strictly from your uploaded materials above.</p>
+
+          <label>
+            Challenge Level
+            <select id="practiceLevel">
+              <option value="easy">Easy (Definitions & Basic Concepts)</option>
+              <option value="medium" selected>Medium (Explanations & Context)</option>
+              <option value="hard">Hard (Limitations, Tradeoffs & Depth)</option>
+            </select>
+          </label>
+
+          <label>
+            Number of Questions
+            <select id="practiceCount">
+              <option value="5">5 Questions</option>
+              <option value="10">10 Questions</option>
+              <option value="20">20 Questions</option>
+              <option value="30">30 Questions</option>
+              <option value="custom">Custom count...</option>
+            </select>
+          </label>
+
+          <div id="customCountWrapper" style="display: none;">
+            <label>
+              Custom question count (Max 50)
+              <input id="customCountInput" type="number" min="1" max="50" value="15">
+            </label>
+          </div>
+
+          <button id="generateBtn" class="button button-primary button-full" type="button">Generate Practice Session <span aria-hidden="true">→</span></button>
+          <p id="practiceError" class="validation" style="margin: 0; min-height: auto;"></p>
+        </div>
+
+        <!-- Interactive Practice Flow (Visible after start) -->
+        <div id="practiceView" class="practice-stage" style="display: none;">
+          <div class="panel-heading panel-heading-spread" style="margin-bottom: 0;">
+            <div class="panel-heading-left">
+              <span class="step-label">Prep</span>
+              <div>
+                <p class="eyebrow" id="practiceProgress">Question 1 of 5</p>
+                <h2 id="practiceBadge">Live practice</h2>
+              </div>
+            </div>
+            <button id="exitPracticeBtn" class="button button-quiet button-compact" type="button">Exit session</button>
+          </div>
+
+          <div class="progress-area" style="margin: 14px 0;">
+            <div class="progress-track" role="progressbar"><span id="practiceProgressBar" style="width: 0%;"></span></div>
+          </div>
+
+          <div class="question-stage">
+            <p id="practiceQuestionText" class="question-text">Loading practice question...</p>
+          </div>
+
+          <label class="answer-label" for="practiceAnswer">
+            Your Response
+            <span id="practiceWordCount">0 words</span>
+          </label>
+          <textarea id="practiceAnswer" placeholder="Explain the concept clearly as if answering to a professor..."></textarea>
+
+          <div class="action-row" style="margin-top: 10px;">
+            <button id="submitAnswerBtn" class="button button-primary" type="button">Submit & Evaluate <span aria-hidden="true">→</span></button>
+            <button id="nextPracticeBtn" class="button button-quiet" type="button" style="display: none;">Next Question <span aria-hidden="true">→</span></button>
+          </div>
+          <p id="evaluationStatus" class="validation" style="margin: 0; min-height: auto; color: var(--blue);"></p>
+
+          <!-- Evaluation Results -->
+          <div id="practiceFeedback" style="display: none; margin-top: 14px; display: grid; gap: 12px;">
+            <article class="feedback-card">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                <h3 style="margin:0;">Semantic Score</h3>
+                <span id="feedbackScoreBadge" class="score-badge">90/100</span>
+              </div>
+              <p id="feedbackExplanation" style="font-size:13px; line-height:1.5;"></p>
+            </article>
+
+            <article class="feedback-card">
+              <h3 style="margin:0 0 6px 0; font-size:13px;">Key Concepts Covered</h3>
+              <div class="keywords-row" id="feedbackCovered">
+                <!-- tags -->
+              </div>
+            </article>
+
+            <article class="feedback-card">
+              <h3 style="margin:0 0 6px 0; font-size:13px;">Missing / Incorrect Concepts</h3>
+              <div class="keywords-row" id="feedbackMissing">
+                <!-- tags -->
+              </div>
+            </article>
+
+            <article class="feedback-card">
+              <h3 style="margin:0 0 6px 0; font-size:13px;">Stronger Suggested Answer</h3>
+              <p id="feedbackModelAnswer" style="font-size:13px; line-height:1.5; font-style:italic;"></p>
+            </article>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="/static/questions.js"></script>
+  <script src="/static/focus-timer.js"></script>
+</body>
+</html>

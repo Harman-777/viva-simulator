@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Secure teacher access for viva grading and assessment configuration.">
+  <title>Teacher Access · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .login-card {
+      max-width: 440px;
+      margin: 60px auto;
+      padding: 36px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span id="loginStatus">Teacher Portal</span>
+      </div>
+    </header>
+
+    <section class="panel login-card">
+      <div class="panel-heading">
+        <span class="step-label" id="formStep">Auth</span>
+        <div>
+          <p class="eyebrow" id="formSubheading">TEACHER PORTAL</p>
+          <h2 id="formTitle">Sign In</h2>
+        </div>
+      </div>
+      <p id="formDescription" style="font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.5;">Access assessment builder, sharing, student submissions, and grading workspace.</p>
+
+      <form id="authForm" class="join-form">
+        <!-- Setup fields shown only during registration -->
+        <div id="setupFields" style="display: none; margin-bottom: 14px; display: grid; gap: 14px;">
+          <label>
+            Display Name
+            <input id="teacherName" type="text" placeholder="Enter your full name..." autocomplete="name">
+          </label>
+          <label>
+            Teacher Invite Code
+            <input id="inviteCode" type="password" placeholder="Enter invite code (e.g. viva123)...">
+          </label>
+        </div>
+
+        <div style="display: grid; gap: 14px;">
+          <label>
+            Email Address
+            <input id="teacherEmail" type="email" placeholder="you@school.edu" required autocomplete="email">
+          </label>
+          <label>
+            Password
+            <input id="teacherPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
+          </label>
+        </div>
+
+        <button type="submit" id="submitBtn" class="button button-primary button-full" style="margin-top: 24px;">Sign In <span aria-hidden="true">→</span></button>
+        <p id="authError" class="validation" style="margin-top: 12px; min-height: auto;"></p>
+        
+        <div id="toggleAuthMode" style="margin-top: 16px; text-align: center; font-size: 13px;">
+          <a href="#" id="toggleAuthBtn" style="color: var(--brand-color); text-decoration: none;">Don't have an account? Sign Up</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script>
+    const formTitle = document.getElementById("formTitle");
+    const formSubheading = document.getElementById("formSubheading");
+    const formDescription = document.getElementById("formDescription");
+    const formStep = document.getElementById("formStep");
+    const setupFields = document.getElementById("setupFields");
+    const teacherName = document.getElementById("teacherName");
+    const inviteCode = document.getElementById("inviteCode");
+    const teacherEmail = document.getElementById("teacherEmail");
+    const teacherPassword = document.getElementById("teacherPassword");
+    const submitBtn = document.getElementById("submitBtn");
+    const authError = document.getElementById("authError");
+    const authForm = document.getElementById("authForm");
+    const toggleAuthMode = document.getElementById("toggleAuthMode");
+    const toggleAuthBtn = document.getElementById("toggleAuthBtn");
+
+    let isSetupMode = false;
+    let setupRequired = false;
+
+    async function checkAuthStatus() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        
+        // If already logged in, redirect to dashboard
+        if (data.teacher) {
+          window.location.href = "/teacher";
+          return;
+        }
+
+        setupRequired = data.setup_required;
+
+        if (setupRequired) {
+          setAuthMode(true);
+          formSubheading.textContent = "FIRST RUN SETUP";
+          formDescription.textContent = "Establish the administrator teacher account for this system. Use these credentials to sign in next time.";
+          toggleAuthMode.style.display = "none";
+        } else {
+          setAuthMode(false);
+          formSubheading.textContent = "TEACHER PORTAL";
+          formDescription.textContent = "Access assessment builder, sharing, student submissions, and grading workspace.";
+          toggleAuthMode.style.display = "block";
+        }
+      } catch {
+        authError.textContent = "Failed to communicate with the server. Please verify it is running.";
+      }
+    }
+
+    function setAuthMode(setupMode) {
+      isSetupMode = setupMode;
+      authError.textContent = "";
+      if (setupMode) {
+        formTitle.textContent = "Create Teacher Account";
+        formStep.textContent = "Setup";
+        setupFields.style.display = "grid";
+        teacherName.required = true;
+        inviteCode.required = true;
+        submitBtn.innerHTML = 'Create Account & Sign In <span aria-hidden="true">→</span>';
+        toggleAuthBtn.textContent = "Already have an account? Sign In";
+      } else {
+        formTitle.textContent = "Sign In";
+        formStep.textContent = "Auth";
+        setupFields.style.display = "none";
+        teacherName.required = false;
+        inviteCode.required = false;
+        submitBtn.innerHTML = 'Sign In <span aria-hidden="true">→</span>';
+        toggleAuthBtn.textContent = "Don't have an account? Sign Up";
+      }
+    }
+
+    toggleAuthBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      setAuthMode(!isSetupMode);
+    });
+
+    authForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      authError.textContent = "";
+      submitBtn.disabled = true;
+
+      const url = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
+      const payload = {
+        email: teacherEmail.value.trim(),
+        password: teacherPassword.value
+      };
+      if (isSetupMode) {
+        payload.display_name = teacherName.value.trim();
+        payload.invite_code = inviteCode.value.trim();
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Authentication failed.");
+        
+        // Redirect to dashboard
+        window.location.href = "/teacher";
+      } catch (err) {
+        authError.textContent = err.message;
+        submitBtn.disabled = false;
+      }
+    });
+
+    checkAuthStatus();
+  </script>
+</body>
+</html>

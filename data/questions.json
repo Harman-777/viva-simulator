@@ -1,0 +1,222 @@
+{
+  "Computer Science": [
+    {
+      "id": "cs-1",
+      "level": "medium",
+      "question": "Explain the difference between a process and a thread.",
+      "expected_keywords": ["process", "thread", "memory", "execution", "context switching"],
+      "model_answer": "A process is an independent program in execution with its own memory space, while a thread is a smaller execution unit inside a process that can share memory with other threads. Threads are lighter and context switching between them is usually faster."
+    },
+    {
+      "id": "cs-2",
+      "level": "medium",
+      "question": "What is time complexity and why is it important?",
+      "expected_keywords": ["time complexity", "algorithm", "input size", "Big O", "performance"],
+      "model_answer": "Time complexity describes how an algorithm's running time grows as input size increases. It is important because it helps compare algorithms and choose efficient solutions using notation like Big O."
+    },
+    {
+      "id": "cs-3",
+      "level": "medium",
+      "question": "Explain the role of an operating system.",
+      "expected_keywords": ["operating system", "hardware", "resources", "process", "memory"],
+      "model_answer": "An operating system manages hardware and software resources. It handles processes, memory, files, devices, and provides an interface between users, applications, and the computer hardware."
+    },
+    {
+      "id": "cs-4",
+      "level": "medium",
+      "question": "What is the difference between stack and queue?",
+      "expected_keywords": ["stack", "queue", "LIFO", "FIFO", "data structure"],
+      "model_answer": "A stack is a LIFO data structure where the last inserted element is removed first. A queue is FIFO, where the first inserted element is removed first."
+    },
+    {
+      "id": "cs-5",
+      "level": "medium",
+      "question": "What is recursion?",
+      "expected_keywords": ["recursion", "function", "base case", "calls itself", "problem"],
+      "model_answer": "Recursion is a technique where a function calls itself to solve a smaller version of a problem. It must have a base case to stop repeated calls."
+    },
+    {
+      "id": "cs-6",
+      "level": "medium",
+      "question": "Explain encapsulation in object-oriented programming.",
+      "expected_keywords": ["encapsulation", "object", "data", "methods", "access"],
+      "model_answer": "Encapsulation means bundling data and methods inside an object and controlling access to internal details. It improves security, modularity, and maintainability."
+    }
+  ],
+  "Python": [
+    {
+      "id": "py-1",
+      "level": "medium",
+      "question": "Why is Python called an interpreted language?",
+      "expected_keywords": ["Python", "interpreted", "line by line", "bytecode", "execution"],
+      "model_answer": "Python is called interpreted because code is executed through the Python interpreter, generally translating source into bytecode and running it without a separate manual compilation step."
+    },
+    {
+      "id": "py-2",
+      "level": "medium",
+      "question": "Explain the difference between list and tuple in Python.",
+      "expected_keywords": ["list", "tuple", "mutable", "immutable", "ordered"],
+      "model_answer": "Both lists and tuples are ordered collections. A list is mutable, so its values can be changed, while a tuple is immutable after creation."
+    },
+    {
+      "id": "py-3",
+      "level": "medium",
+      "question": "What are Python dictionaries used for?",
+      "expected_keywords": ["dictionary", "key", "value", "mapping", "lookup"],
+      "model_answer": "A Python dictionary stores data as key-value pairs. It is useful for fast lookup, mapping identifiers to values, and representing structured information."
+    },
+    {
+      "id": "py-4",
+      "level": "medium",
+      "question": "What is exception handling in Python?",
+      "expected_keywords": ["exception", "try", "except", "error", "handling"],
+      "model_answer": "Exception handling manages runtime errors using try and except blocks. It prevents programs from crashing and allows graceful error recovery."
+    },
+    {
+      "id": "py-5",
+      "level": "medium",
+      "question": "What is a function in Python?",
+      "expected_keywords": ["function", "def", "parameters", "return", "reuse"],
+      "model_answer": "A function is a reusable block of code defined with def. It can accept parameters, perform a task, and return a result."
+    },
+    {
+      "id": "py-6",
+      "level": "medium",
+      "question": "Explain file handling in Python.",
+      "expected_keywords": ["file", "open", "read", "write", "close"],
+      "model_answer": "File handling in Python allows reading and writing files using open, read, write, and close operations. The with statement is commonly used to close files safely."
+    }
+  ],
+  "Web Development": [
+    {
+      "id": "web-1",
+      "level": "medium",
+      "question": "What is the role of HTML, CSS, and JavaScript in a website?",
+      "expected_keywords": ["HTML", "CSS", "JavaScript", "structure", "style", "interaction"],
+      "model_answer": "HTML defines structure, CSS controls style and layout, and JavaScript adds logic, interactivity, and dynamic behavior to a website."
+    },
+    {
+      "id": "web-2",
+      "level": "medium",
+      "question": "Explain responsive web design.",
+      "expected_keywords": ["responsive", "screen", "layout", "media query", "mobile"],
+      "model_answer": "Responsive web design makes a website adapt to different screen sizes using flexible layouts, scalable units, and media queries."
+    },
+    {
+      "id": "web-3",
+      "level": "medium",
+      "question": "What is an API in web development?",
+      "expected_keywords": ["API", "request", "response", "server", "data"],
+      "model_answer": "An API is an interface that allows applications to communicate. In web development, clients send requests to servers and receive responses, usually containing data."
+    },
+    {
+      "id": "web-4",
+      "level": "medium",
+      "question": "What is the DOM?",
+      "expected_keywords": ["DOM", "document", "object", "HTML", "JavaScript"],
+      "model_answer": "The DOM is a tree-like object representation of an HTML document. JavaScript can use it to read and change page content, style, and behavior."
+    },
+    {
+      "id": "web-5",
+      "level": "medium",
+      "question": "What is local storage in browsers?",
+      "expected_keywords": ["local storage", "browser", "key", "value", "persistent"],
+      "model_answer": "Local storage is browser storage that saves key-value data persistently. Data remains available after refreshing or closing the browser."
+    },
+    {
+      "id": "web-6",
+      "level": "medium",
+      "question": "Explain client-server architecture.",
+      "expected_keywords": ["client", "server", "request", "response", "network"],
+      "model_answer": "Client-server architecture separates the user-facing client from the server that processes requests, stores data, and sends responses over a network."
+    }
+  ],
+  "AI Basics": [
+    {
+      "id": "ai-1",
+      "level": "medium",
+      "question": "What is artificial intelligence?",
+      "expected_keywords": ["artificial intelligence", "machine", "human", "learning", "decision"],
+      "model_answer": "Artificial intelligence is the ability of machines to perform tasks that normally require human intelligence, such as learning, reasoning, decision-making, and language understanding."
+    },
+    {
+      "id": "ai-2",
+      "level": "medium",
+      "question": "What is the difference between AI and machine learning?",
+      "expected_keywords": ["AI", "machine learning", "subset", "data", "model"],
+      "model_answer": "AI is the broader field of making machines intelligent. Machine learning is a subset of AI where models learn patterns from data to make predictions or decisions."
+    },
+    {
+      "id": "ai-3",
+      "level": "medium",
+      "question": "What is training data?",
+      "expected_keywords": ["training data", "model", "examples", "learn", "patterns"],
+      "model_answer": "Training data is the set of examples used to teach a machine learning model. The model learns patterns from this data to make predictions on new inputs."
+    },
+    {
+      "id": "ai-4",
+      "level": "medium",
+      "question": "Explain supervised learning.",
+      "expected_keywords": ["supervised learning", "labeled data", "input", "output", "prediction"],
+      "model_answer": "Supervised learning trains a model using labeled data, where each input has a known output. The model learns to predict outputs for new inputs."
+    },
+    {
+      "id": "ai-5",
+      "level": "medium",
+      "question": "What is a neural network?",
+      "expected_keywords": ["neural network", "layers", "neurons", "weights", "patterns"],
+      "model_answer": "A neural network is a machine learning model inspired by the brain. It uses layers of connected nodes and weights to learn patterns from data."
+    },
+    {
+      "id": "ai-6",
+      "level": "medium",
+      "question": "What is bias in AI?",
+      "expected_keywords": ["bias", "AI", "data", "unfair", "prediction"],
+      "model_answer": "Bias in AI happens when a model produces unfair or inaccurate results because of biased data, design choices, or training patterns."
+    }
+  ],
+  "DBMS": [
+    {
+      "id": "db-1",
+      "level": "medium",
+      "question": "What is a database management system?",
+      "expected_keywords": ["DBMS", "database", "store", "manage", "data"],
+      "model_answer": "A DBMS is software used to store, manage, retrieve, and organize data in a database. It provides controlled access and supports operations like insert, update, delete, and query."
+    },
+    {
+      "id": "db-2",
+      "level": "medium",
+      "question": "Explain primary key and foreign key.",
+      "expected_keywords": ["primary key", "foreign key", "unique", "table", "relationship"],
+      "model_answer": "A primary key uniquely identifies each row in a table. A foreign key links one table to another by referencing a primary key, creating relationships between tables."
+    },
+    {
+      "id": "db-3",
+      "level": "medium",
+      "question": "What is normalization?",
+      "expected_keywords": ["normalization", "redundancy", "tables", "data", "anomaly"],
+      "model_answer": "Normalization is the process of organizing database tables to reduce redundancy and avoid update, insert, and delete anomalies."
+    },
+    {
+      "id": "db-4",
+      "level": "medium",
+      "question": "What is SQL?",
+      "expected_keywords": ["SQL", "query", "database", "select", "data"],
+      "model_answer": "SQL is a structured query language used to create, read, update, and delete data in relational databases."
+    },
+    {
+      "id": "db-5",
+      "level": "medium",
+      "question": "What is a transaction in DBMS?",
+      "expected_keywords": ["transaction", "ACID", "database", "operation", "consistency"],
+      "model_answer": "A transaction is a group of database operations treated as one unit. It follows ACID properties to maintain reliability and consistency."
+    },
+    {
+      "id": "db-6",
+      "level": "medium",
+      "question": "Explain indexing in DBMS.",
+      "expected_keywords": ["index", "database", "search", "performance", "table"],
+      "model_answer": "Indexing creates a data structure that helps a database find rows faster. It improves search performance but may add storage and update overhead."
+    }
+  ]
+}

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Manage assessments, links, and student completions.">
+  <title>Teacher Dashboard · viva.</title>
+  <link rel="stylesheet" href="/static/styles.css">
+  <style>
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .assessment-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 18px;
+    }
+    .assessment-table th, .assessment-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+    }
+    .assessment-table th {
+      font-weight: 750;
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .assessment-table td {
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .status-badge {
+      display: inline-flex;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-published { color: var(--green); background: #e6f6f0; }
+    .badge-draft { color: var(--muted); background: var(--canvas); }
+    .action-links {
+      display: flex;
+      gap: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva home">
+        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>viva<span class="brand-dot">.</span></span>
+      </a>
+      <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <button id="signOutBtn" class="button button-quiet button-compact" style="margin-left: 12px;">Sign Out</button>
+    </header>
+
+    <div class="dashboard-header" style="margin-top: 32px;">
+      <div>
+        <p class="eyebrow">Instructor Control Workspace</p>
+        <h1 style="margin: 6px 0 0; font-size: 32px; font-weight: 900; letter-spacing: -0.04em;">Assigned Vivas</h1>
+      </div>
+      <a href="/teacher/vivas/new" class="button button-primary">Create New Viva <span aria-hidden="true">+</span></a>
+    </div>
+
+    <!-- API Key Settings Panel -->
+    <details class="ai-settings" style="margin-bottom: 18px;">
+      <summary>
+        <span class="settings-icon">⚙️</span>
+        AI Model Settings
+        <span class="summary-helper">▾</span>
+      </summary>
+      <div class="ai-settings-content">
+        <!-- Hidden trap inputs to prevent browser password managers from autofilling saved email/password into model name/API key -->
+        <div style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
+          <input type="text" name="fake_username_trap" tabindex="-1" autocomplete="username">
+          <input type="password" name="fake_password_trap" tabindex="-1" autocomplete="current-password">
+        </div>
+        <p>Configure the AI model used for question generation and answer evaluation. These settings apply to all your vivas.</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <label>
+            API Key
+            <input id="teacherApiKeyInput" name="no_autofill_teacher_api_key" type="password" placeholder="sk-..." autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
+          </label>
+          <label>
+            Base URL (optional)
+            <input id="teacherBaseUrlInput" name="no_autofill_teacher_base_url" type="text" placeholder="http://localhost:11434/v1" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
+          </label>
+          <label>
+            Model Name (optional)
+            <input id="teacherModelNameInput" name="no_autofill_teacher_model_name" type="text" placeholder="qwen2.5-coder-32b-instruct" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
+          </label>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650;">
+            <span id="teacherApiDot" style="width:8px; height:8px; border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px #e9edf3; flex-shrink:0;"></span>
+            <span id="teacherApiStatusText" style="color:var(--muted);">Loading settings...</span>
+          </div>
+          <div>
+            <button id="teacherToggleKeyBtn" class="button button-quiet button-compact" type="button">Show Key</button>
+            <button id="teacherSaveKeyBtn" class="button button-primary button-compact" type="button">Save Settings</button>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <section class="panel" style="padding: 0; overflow-x: auto;">
+      <table class="assessment-table">
+        <thead>
+          <tr>
+            <th>Title & Subject</th>
+            <th>Status</th>
+            <th>Student Attempts</th>
+            <th>Last Updated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="vivaListContainer">
+          <tr>
+            <td colspan="5" class="empty-state" style="border:none; min-height: 120px;">Fetching your viva assessments...</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const teacherDisplay = document.getElementById("teacherDisplay");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const vivaListContainer = document.getElementById("vivaListContainer");
+
+    let teacher = null;
+
+    async function checkLogin() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        if (!data.teacher) {
+          window.location.href = "/teacher/login";
+          return;
+        }
+        teacher = data.teacher;
+        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
+        loadAssessments();
+      } catch {
+        window.location.href = "/teacher/login";
+      }
+    }
+
+    async function loadAssessments() {
+      try {
+        const res = await fetch("/api/teacher/assessments");
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        renderAssessments(data.assessments || []);
+      } catch {
+        vivaListContainer.innerHTML = `<tr><td colspan="5" class="empty-state" style="border:none; color:var(--red);">Could not retrieve assessments. Ensure server is active.</td></tr>`;
+      }
+    }
+
+    function renderAssessments(assessments) {
+      if (assessments.length === 0) {
+        vivaListContainer.innerHTML = `<tr><td colspan="5" class="empty-state" style="border:none;">You have not created any assessments yet. Click "Create New Viva" to build your first.</td></tr>`;
+        return;
+      }
+
+      vivaListContainer.innerHTML = assessments.map(a => {
+        const statusClass = a.status === "published" ? "badge-published" : "badge-draft";
+        const dateStr = new Date(a.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        
+        return `
+          <tr>
+            <td>
+              <div style="font-weight: 750; font-size:15px;">${escapeHtml(a.title)}</div>
+              <div style="color:var(--muted); font-size:12px; margin-top:2px;">${escapeHtml(a.subject)} · ${a.duration_minutes} mins</div>
+            </td>
+            <td>
+              <span class="status-badge ${statusClass}">${a.status}</span>
+            </td>
+            <td>
+              <strong>${a.submitted_count}</strong> submitted <span style="color:var(--muted)">/ ${a.attempt_count} started</span>
+            </td>
+            <td style="color:var(--muted); font-size:13px;">
+              ${dateStr}
+            </td>
+            <td>
+              <div class="action-links">
+                <a href="/teacher/vivas/edit?id=${a.id}" class="button button-quiet button-compact" style="font-size:12px;">Edit</a>
+                <a href="/teacher/vivas/share?id=${a.id}" class="button button-quiet button-compact" style="font-size:12px;">Link</a>
+                <a href="/teacher/vivas/results?id=${a.id}" class="button button-primary button-compact" style="font-size:12px; ${a.attempt_count > 0 ? '' : 'opacity:0.48; cursor:not-allowed;'}" onclick="return checkAttemptsCount(event, ${a.attempt_count})">Results</a>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    function checkAttemptsCount(event, count) {
+      if (count === 0) {
+        alert("This assessment does not have any student submissions yet.");
+        event.preventDefault();
+        return false;
+      }
+      return true;
+    }
+
+    signOutBtn.addEventListener("click", async () => {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+        window.location.href = "/";
+      } catch {
+        alert("Logout failed.");
+      }
+    });
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    // --- AI Settings Management ---
+    const teacherApiKeyInput = document.getElementById("teacherApiKeyInput");
+    const teacherBaseUrlInput = document.getElementById("teacherBaseUrlInput");
+    const teacherModelNameInput = document.getElementById("teacherModelNameInput");
+    const teacherToggleKeyBtn = document.getElementById("teacherToggleKeyBtn");
+    const teacherSaveKeyBtn = document.getElementById("teacherSaveKeyBtn");
+    const teacherApiDot = document.getElementById("teacherApiDot");
+    const teacherApiStatusText = document.getElementById("teacherApiStatusText");
+
+    async function loadTeacherSettings() {
+      try {
+        const res = await fetch("/api/teacher/settings");
+        if (res.ok) {
+          const data = await res.json();
+          const s = data.settings || {};
+          
+          if (!s.api_key && teacherApiKeyInput.value) {
+            teacherApiKeyInput.value = "";
+          } else {
+            teacherApiKeyInput.value = s.api_key || "";
+          }
+
+          teacherBaseUrlInput.value = s.base_url || "";
+
+          if (!s.model_name && (teacherModelNameInput.value.includes("@") || teacherModelNameInput.value.includes("."))) {
+            teacherModelNameInput.value = "";
+          } else {
+            teacherModelNameInput.value = s.model_name || "";
+          }
+          
+          if (s.api_key || s.base_url) {
+            teacherApiDot.style.background = "var(--green)";
+            teacherApiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
+            teacherApiStatusText.textContent = "Settings configured.";
+            teacherApiStatusText.style.color = "var(--green)";
+            
+            // Sync with local storage for frontend usage during creation
+            if (s.api_key) localStorage.setItem("viva_teacher_api_key", s.api_key);
+            if (s.base_url) localStorage.setItem("viva_teacher_base_url", s.base_url);
+            if (s.model_name) localStorage.setItem("viva_teacher_model_name", s.model_name);
+          } else {
+            teacherApiDot.style.background = "var(--muted)";
+            teacherApiDot.style.boxShadow = "0 0 0 3px #e9edf3";
+            teacherApiStatusText.textContent = "Using server default AI settings.";
+            teacherApiStatusText.style.color = "var(--muted)";
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load settings", e);
+      }
+    }
+
+    teacherToggleKeyBtn.addEventListener("click", () => {
+      if (teacherApiKeyInput.type === "password") {
+        teacherApiKeyInput.type = "text";
+        teacherToggleKeyBtn.textContent = "Hide Key";
+      } else {
+        teacherApiKeyInput.type = "password";
+        teacherToggleKeyBtn.textContent = "Show Key";
+      }
+    });
+
+    teacherSaveKeyBtn.addEventListener("click", async () => {
+      const api_key = teacherApiKeyInput.value.trim();
+      const base_url = teacherBaseUrlInput.value.trim();
+      const model_name = teacherModelNameInput.value.trim();
+      
+      teacherSaveKeyBtn.disabled = true;
+      teacherSaveKeyBtn.textContent = "Saving...";
+      
+      try {
+        const res = await fetch("/api/teacher/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key, base_url, model_name })
+        });
+        
+        if (res.ok) {
+          if (api_key) localStorage.setItem("viva_teacher_api_key", api_key);
+          else localStorage.removeItem("viva_teacher_api_key");
+          
+          if (base_url) localStorage.setItem("viva_teacher_base_url", base_url);
+          else localStorage.removeItem("viva_teacher_base_url");
+          
+          if (model_name) localStorage.setItem("viva_teacher_model_name", model_name);
+          else localStorage.removeItem("viva_teacher_model_name");
+
+          teacherApiDot.style.background = "var(--green)";
+          teacherApiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
+          teacherApiStatusText.textContent = "Settings saved successfully.";
+          teacherApiStatusText.style.color = "var(--green)";
+        } else {
+          throw new Error("Failed to save");
+        }
+      } catch (e) {
+        teacherApiStatusText.textContent = "Error saving settings.";
+        teacherApiStatusText.style.color = "var(--red)";
+      } finally {
+        teacherSaveKeyBtn.disabled = false;
+        teacherSaveKeyBtn.textContent = "Save Settings";
+      }
+    });
+
+    loadTeacherSettings();
+    checkLogin();
+  </script>
+</body>
+</html>
