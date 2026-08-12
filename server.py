@@ -85,13 +85,15 @@ def random_token() -> str:
 
 
 def database() -> sqlite3.Connection:
+    DATA_DIR.mkdir(exist_ok=True)
     connection = sqlite3.connect(DATABASE_PATH, timeout=30.0)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-    try:
-        connection.execute("PRAGMA journal_mode = WAL")
-    except sqlite3.OperationalError:
-        pass
+    if not os.environ.get("VERCEL"):
+        try:
+            connection.execute("PRAGMA journal_mode = WAL")
+        except sqlite3.OperationalError:
+            pass
     return connection
 
 
