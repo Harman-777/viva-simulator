@@ -84,6 +84,35 @@ def random_token() -> str:
     return secrets.token_urlsafe(24)
 
 
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "viva_secret_key_2026_default_secure")
+
+
+def sign_session_payload(payload: dict) -> str:
+    raw_json = json.dumps(payload, sort_keys=True)
+    b64_data = base64.urlsafe_b64encode(raw_json.encode("utf-8")).decode("ascii").rstrip("=")
+    sig = hmac.new(SESSION_SECRET.encode("utf-8"), b64_data.encode("ascii"), hashlib.sha256).hexdigest()
+    return f"{b64_data}.{sig}"
+
+
+def verify_session_payload(token: str) -> dict | None:
+    if not token or "." not in token:
+        return None
+    try:
+        b64_data, sig = token.split(".", 1)
+        expected_sig = hmac.new(SESSION_SECRET.encode("utf-8"), b64_data.encode("ascii"), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected_sig):
+            return None
+        padded_b64 = b64_data + "=" * (-len(b64_data) % 4)
+        raw_json = base64.urlsafe_b64decode(padded_b64.encode("ascii")).decode("utf-8")
+        payload = json.loads(raw_json)
+        exp = payload.get("exp", 0)
+        if time.time() > exp:
+            return None
+        return payload
+    except Exception:
+        return None
+
+
 def database() -> sqlite3.Connection:
     DATA_DIR.mkdir(exist_ok=True)
     connection = sqlite3.connect(DATABASE_PATH, timeout=30.0)
@@ -676,7 +705,7 @@ class VivaHandler(BaseHTTPRequestHandler):
             pass
         return cookie
 
-    def teacher(self, conn: sqlite3.Connection) -> sqlite3.Row | None:
+    def teacher(self, conn: sqlite3.Connection) -> dict | None:
         token_str = None
         try:
             token_obj = self.cookies().get("viva_teacher_session")
@@ -685,7 +714,6 @@ class VivaHandler(BaseHTTPRequestHandler):
         except Exception:
             pass
 
-        # Regex fallback in case SimpleCookie failed due to third-party cookies in header
         if not token_str:
             cookie_header = self.headers.get("Cookie", "")
             match = re.search(r"(?:^|;\s*)viva_teacher_session=([^;]+)", cookie_header)
@@ -695,25 +723,22 @@ class VivaHandler(BaseHTTPRequestHandler):
         if not token_str:
             return None
 
-        row = conn.execute(
-            "SELECT t.*, s.created_at AS session_created_at FROM teachers t JOIN teacher_sessions s ON s.teacher_id = t.id WHERE s.id = ?",
-            (token_str,),
-        ).fetchone()
-        if not row:
-            return None
+        # 1. Stateless HMAC verification (for Vercel serverless / multi-container support)
+        payload = verify_session_payload(token_str)
+        if payload:
+            return {"id": payload["id"], "email": payload["email"], "display_name": payload["display_name"]}
 
-        # Server-side session expiry: reject sessions older than 14 days
+        # 2. Database lookup fallback
         try:
-            session_created = row["session_created_at"]
-            session_ts = datetime.fromisoformat(session_created)
-            if session_ts.tzinfo is None:
-                session_ts = session_ts.replace(tzinfo=timezone.utc)
-            if datetime.now(timezone.utc) - session_ts > timedelta(days=14):
-                conn.execute("DELETE FROM teacher_sessions WHERE id = ?", (token_str,))
-                return None
+            row = conn.execute(
+                "SELECT t.id, t.email, t.display_name FROM teachers t JOIN teacher_sessions s ON s.teacher_id = t.id WHERE s.id = ?",
+                (token_str,),
+            ).fetchone()
+            if row:
+                return {"id": row["id"], "email": row["email"], "display_name": row["display_name"]}
         except Exception:
             pass
-        return row
+        return None
 
     def require_teacher(self, conn: sqlite3.Connection) -> sqlite3.Row:
         teacher = self.teacher(conn)
@@ -1036,8 +1061,18 @@ class VivaHandler(BaseHTTPRequestHandler):
         return self.start_teacher_session(conn, teacher)
 
     def start_teacher_session(self, conn: sqlite3.Connection, teacher: sqlite3.Row):
-        token = random_token()
-        conn.execute("INSERT INTO teacher_sessions (id, teacher_id, created_at) VALUES (?, ?, ?)", (token, teacher["id"], now()))
+        exp = int(time.time()) + (14 * 86400)
+        payload = {
+            "id": teacher["id"],
+            "email": teacher["email"],
+            "display_name": teacher["display_name"],
+            "exp": exp
+        }
+        token = sign_session_payload(payload)
+        try:
+            conn.execute("INSERT OR REPLACE INTO teacher_sessions (id, teacher_id, created_at) VALUES (?, ?, ?)", (token, teacher["id"], now()))
+        except Exception:
+            pass
         self.send_json({"teacher": {"id": teacher["id"], "email": teacher["email"], "display_name": teacher["display_name"]}}, headers={"Set-Cookie": f"viva_teacher_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=1209600"})
 
     def upload_material(self, conn: sqlite3.Connection, payload: dict):
