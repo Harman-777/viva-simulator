@@ -6,179 +6,823 @@
   <meta name="description" content="Secure teacher access for viva grading and assessment configuration.">
   <title>Teacher Access · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+  <script src="/static/auth.js"></script>
   <style>
+    /* ─── Login Page Layout ─── */
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      background: var(--canvas);
+    }
+
+    .login-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .login-bg::before {
+      content: "";
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      top: -120px;
+      right: -100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(19,105,232,0.12) 0%, transparent 70%);
+      animation: float-orb 20s ease-in-out infinite;
+    }
+    .login-bg::after {
+      content: "";
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      bottom: -80px;
+      left: -120px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(112,72,232,0.10) 0%, transparent 70%);
+      animation: float-orb 25s ease-in-out infinite reverse;
+    }
+
+    @keyframes float-orb {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -20px) scale(1.05); }
+      50% { transform: translate(-20px, 30px) scale(0.95); }
+      75% { transform: translate(15px, 15px) scale(1.02); }
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+      padding: 24px;
+      animation: card-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ─── Login Card ─── */
     .login-card {
-      max-width: 440px;
-      margin: 60px auto;
-      padding: 36px;
+      padding: 40px 36px 36px;
+      border-radius: 22px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      box-shadow:
+        0 1px 2px rgba(16,24,40,0.04),
+        0 4px 16px rgba(16,24,40,0.06),
+        0 12px 40px rgba(16,24,40,0.04);
+      backdrop-filter: blur(12px);
+    }
+
+    [data-theme="dark"] .login-card {
+      background: rgba(19,28,53,0.85);
+      border-color: rgba(51,65,85,0.5);
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.3),
+        0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(20px);
+    }
+
+    /* ─── Brand Header ─── */
+    .login-brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .login-brand-mark {
+      display: inline-flex;
+      align-items: end;
+      gap: 2.5px;
+      width: 28px;
+      height: 28px;
+      padding: 5px;
+      border-radius: 9px;
+      background: var(--blue);
+      animation: pulse-brand 3s ease-in-out infinite;
+    }
+    @keyframes pulse-brand {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(19,105,232,0.3); }
+      50% { box-shadow: 0 0 0 8px rgba(19,105,232,0); }
+    }
+    .login-brand-mark span {
+      display: block;
+      width: 3.5px;
+      border-radius: 2px;
+      background: #fff;
+    }
+    .login-brand-mark span:nth-child(1) { height: 7px; opacity: 0.76; }
+    .login-brand-mark span:nth-child(2) { height: 13px; }
+    .login-brand-mark span:nth-child(3) { height: 18px; opacity: 0.9; }
+    .login-brand-text {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.07em;
+      color: var(--ink);
+    }
+    .login-brand-text .dot { color: var(--blue); }
+
+    .login-subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 6px 0 28px;
+    }
+
+    /* ─── Mode Tabs ─── */
+    .login-mode-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+      background: var(--canvas);
+      border: 1px solid var(--line);
+    }
+    .login-mode-tab {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .login-mode-tab:hover:not(.tab-active) {
+      color: var(--ink-soft);
+    }
+    .login-mode-tab.tab-active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(16,24,40,0.06);
+    }
+    [data-theme="dark"] .login-mode-tabs {
+      background: #0b1329;
+      border-color: #1e293b;
+    }
+    [data-theme="dark"] .login-mode-tab.tab-active {
+      background: #1e293b;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ─── Form Fields ─── */
+    .login-fields {
+      display: grid;
+      gap: 16px;
+    }
+    .field-group {
+      position: relative;
+    }
+    .field-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink-soft);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .field-group label .optional {
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .field-input-wrap {
+      position: relative;
+    }
+    .field-input-wrap input {
+      width: 100%;
+      min-height: 46px;
+      padding: 11px 14px;
+      padding-right: 44px;
+      border: 1px solid var(--line-strong);
+      border-radius: 10px;
+      color: var(--ink);
+      background: var(--surface);
+      font: inherit;
+      font-size: 14px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .field-input-wrap input:focus {
+      outline: none;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(19,105,232,0.1);
+    }
+    .field-input-wrap input.input-valid {
+      border-color: var(--green);
+    }
+    .field-input-wrap input.input-valid:focus {
+      box-shadow: 0 0 0 4px rgba(14,159,110,0.1);
+    }
+    .field-input-wrap input.input-invalid {
+      border-color: var(--red);
+    }
+    .field-input-wrap input.input-invalid:focus {
+      box-shadow: 0 0 0 4px rgba(217,45,32,0.1);
+    }
+    [data-theme="dark"] .field-input-wrap input {
+      background: #0f172a;
+      border-color: #334155;
+      color: #f1f5f9;
+    }
+
+    .field-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      font-size: 14px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .field-icon.visible { opacity: 1; }
+    .field-icon.valid { color: var(--green); }
+    .field-icon.invalid { color: var(--red); }
+
+    /* ─── Password Toggle ─── */
+    .password-toggle {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 16px;
+      transition: color 0.2s, background 0.2s;
+      pointer-events: auto;
+    }
+    .password-toggle:hover {
+      color: var(--ink-soft);
+      background: var(--canvas);
+    }
+
+    .field-hint {
+      margin: 5px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.4;
+      min-height: 16px;
+    }
+    .field-hint.error { color: var(--red); }
+
+    /* ─── Password Strength ─── */
+    .password-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+      height: 4px;
+    }
+    .strength-bar {
+      flex: 1;
+      border-radius: 99px;
+      background: var(--line);
+      transition: background 0.3s ease;
+    }
+    .strength-bar.filled-weak { background: var(--red); }
+    .strength-bar.filled-medium { background: var(--amber); }
+    .strength-bar.filled-strong { background: var(--green); }
+
+    /* ─── Name field slide ─── */
+    .name-field-wrapper {
+      overflow: hidden;
+      transition: max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease, margin 0.35s ease;
+      max-height: 0;
+      opacity: 0;
+      margin-top: 0;
+    }
+    .name-field-wrapper.visible {
+      max-height: 100px;
+      opacity: 1;
+      margin-top: 16px;
+    }
+
+    /* ─── Error Banner ─── */
+    .error-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      margin-top: 16px;
+      border-radius: 10px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      animation: shake 0.4s ease;
+    }
+    .error-banner.visible { display: flex; }
+    .error-banner-icon {
+      flex-shrink: 0;
+      font-size: 16px;
+    }
+    [data-theme="dark"] .error-banner {
+      background: rgba(217,45,32,0.1);
+      border-color: rgba(217,45,32,0.25);
+      color: #fca5a5;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      40% { transform: translateX(6px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    /* ─── Submit Button ─── */
+    .login-submit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      min-height: 48px;
+      margin-top: 24px;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 11px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 750;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-submit:not(:disabled):hover {
+      background: var(--blue-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(19,105,232,0.25);
+    }
+    .login-submit:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-spinner {
+      display: none;
+      width: 18px;
+      height: 18px;
+      border: 2.5px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    .login-submit.loading .login-spinner { display: block; }
+    .login-submit.loading .btn-label { display: none; }
+    .login-submit.loading .btn-loading-text { display: inline; }
+    .btn-loading-text { display: none; }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ─── Success Overlay ─── */
+    .success-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(8px);
+    }
+    .success-overlay.visible {
+      display: flex;
+      animation: fade-in 0.3s ease;
+    }
+    [data-theme="dark"] .success-overlay {
+      background: rgba(11,19,41,0.92);
+    }
+    .success-content {
+      text-align: center;
+      animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .success-check {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      background: var(--green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #fff;
+      box-shadow: 0 0 0 0 rgba(14,159,110,0.3);
+      animation: check-pulse 0.6s ease 0.2s;
+    }
+    @keyframes check-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(14,159,110,0.4); }
+      100% { box-shadow: 0 0 0 20px rgba(14,159,110,0); }
+    }
+    .success-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 0;
+    }
+    .success-sub {
+      font-size: 13px;
+      color: var(--muted);
+      margin: 6px 0 0;
+    }
+
+    @keyframes fade-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(0.85); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ─── Footer ─── */
+    .login-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+    }
+    .login-footer a {
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .login-footer a:hover { color: var(--blue-dark); }
+
+    /* ─── Theme Toggle on Login ─── */
+    .login-theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 500px) {
+      .login-container { padding: 16px; }
+      .login-card { padding: 28px 22px 24px; border-radius: 18px; }
+      .login-brand-text { font-size: 22px; }
+      .login-theme-toggle { top: 12px; right: 12px; }
     }
   </style>
 </head>
 <body>
-  <main class="app-shell">
-    <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
-      </a>
-      <div class="status-indicator">
-        <span class="status-dot"></span>
-        <span id="loginStatus">Teacher Portal</span>
-      </div>
-    </header>
+  <!-- Background decoration -->
+  <div class="login-bg" aria-hidden="true"></div>
 
-    <section class="panel login-card">
-      <div class="panel-heading">
-        <span class="step-label" id="formStep">Auth</span>
-        <div>
-          <p class="eyebrow" id="formSubheading">TEACHER PORTAL</p>
-          <h2 id="formTitle">Sign In</h2>
+  <!-- Theme toggle -->
+  <div class="login-theme-toggle">
+    <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">🌙 <span class="theme-btn-text">Dark</span></button>
+  </div>
+
+  <!-- Success Overlay -->
+  <div class="success-overlay" id="successOverlay">
+    <div class="success-content">
+      <div class="success-check">✓</div>
+      <p class="success-text" id="successText">Welcome back!</p>
+      <p class="success-sub">Redirecting to your dashboard…</p>
+    </div>
+  </div>
+
+  <div class="login-page">
+    <div class="login-container">
+      <div class="login-card">
+        <!-- Brand -->
+        <div class="login-brand">
+          <span class="login-brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
+          <span class="login-brand-text">viva<span class="dot">.</span></span>
+        </div>
+        <p class="login-subtitle">Teacher Portal — Sign in to manage your assessments</p>
+
+        <!-- Mode Tabs -->
+        <div class="login-mode-tabs" role="tablist">
+          <button type="button" class="login-mode-tab tab-active" role="tab" id="tabSignIn" aria-selected="true" onclick="setMode('signin')">Sign In</button>
+          <button type="button" class="login-mode-tab" role="tab" id="tabSignUp" aria-selected="false" onclick="setMode('signup')">Create Account</button>
+        </div>
+
+        <!-- Form -->
+        <form id="authForm" autocomplete="on" novalidate>
+          <div class="login-fields">
+            <!-- Email -->
+            <div class="field-group">
+              <label for="teacherEmail">Email Address</label>
+              <div class="field-input-wrap">
+                <input id="teacherEmail" type="email" placeholder="you@school.edu" required autocomplete="email" spellcheck="false">
+                <span class="field-icon" id="emailIcon" aria-hidden="true"></span>
+              </div>
+              <p class="field-hint" id="emailHint"></p>
+            </div>
+
+            <!-- Password -->
+            <div class="field-group">
+              <label for="teacherPassword">Password</label>
+              <div class="field-input-wrap">
+                <input id="teacherPassword" type="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
+                <button type="button" class="password-toggle" id="passToggle" onclick="togglePassword()" aria-label="Show password" tabindex="-1">👁</button>
+              </div>
+              <div class="password-strength" id="passwordStrength" style="display: none;">
+                <div class="strength-bar" id="str1"></div>
+                <div class="strength-bar" id="str2"></div>
+                <div class="strength-bar" id="str3"></div>
+                <div class="strength-bar" id="str4"></div>
+              </div>
+              <p class="field-hint" id="passHint"></p>
+            </div>
+
+            <!-- Display Name (signup mode only) -->
+            <div class="name-field-wrapper" id="nameWrapper">
+              <div class="field-group">
+                <label for="teacherName">Display Name <span class="optional">(shown on reports)</span></label>
+                <div class="field-input-wrap">
+                  <input id="teacherName" type="text" placeholder="e.g. Professor Smith" autocomplete="name">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Error Banner -->
+          <div class="error-banner" id="errorBanner" role="alert">
+            <span class="error-banner-icon" aria-hidden="true">⚠️</span>
+            <span id="errorText"></span>
+          </div>
+
+          <!-- Submit -->
+          <button type="submit" id="submitBtn" class="login-submit">
+            <span class="login-spinner" aria-hidden="true"></span>
+            <span class="btn-label" id="btnLabel">Sign In <span aria-hidden="true">→</span></span>
+            <span class="btn-loading-text" id="btnLoadingText">Signing in…</span>
+          </button>
+        </form>
+
+        <!-- Footer -->
+        <div class="login-footer">
+          <a href="/" aria-label="Back to home">← Back to Home</a>
+          <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="min-height:34px; padding:5px 12px; font-size:12px;">🌙 <span class="theme-btn-text">Dark</span></button>
         </div>
       </div>
-      <p id="formDescription" style="font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; line-height: 1.5;">Access assessment builder, sharing, student submissions, and grading workspace.</p>
-
-      <form id="authForm" class="join-form">
-        <!-- Setup fields shown only during registration -->
-        <div id="setupFields" style="display: none; margin-bottom: 14px; display: grid; gap: 14px;">
-          <label>
-            Display Name
-            <input id="teacherName" type="text" placeholder="Enter your full name..." autocomplete="name">
-          </label>
-          <label>
-            Teacher Invite Code
-            <input id="inviteCode" type="password" placeholder="Enter invite code (e.g. viva123)...">
-          </label>
-        </div>
-
-        <div style="display: grid; gap: 14px;">
-          <label>
-            Email Address
-            <input id="teacherEmail" type="email" placeholder="you@school.edu" required autocomplete="email">
-          </label>
-          <label>
-            Password
-            <input id="teacherPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
-          </label>
-        </div>
-
-        <button type="submit" id="submitBtn" class="button button-primary button-full" style="margin-top: 24px;">Sign In <span aria-hidden="true">→</span></button>
-        <p id="authError" class="validation" style="margin-top: 12px; min-height: auto;"></p>
-        
-        <div id="toggleAuthMode" style="margin-top: 16px; text-align: center; font-size: 13px;">
-          <a href="#" id="toggleAuthBtn" style="color: var(--brand-color); text-decoration: none;">Don't have an account? Sign Up</a>
-        </div>
-      </form>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script>
-    const formTitle = document.getElementById("formTitle");
-    const formSubheading = document.getElementById("formSubheading");
-    const formDescription = document.getElementById("formDescription");
-    const formStep = document.getElementById("formStep");
-    const setupFields = document.getElementById("setupFields");
-    const teacherName = document.getElementById("teacherName");
-    const inviteCode = document.getElementById("inviteCode");
-    const teacherEmail = document.getElementById("teacherEmail");
-    const teacherPassword = document.getElementById("teacherPassword");
+    // ─── DOM refs ───
+    const emailInput = document.getElementById("teacherEmail");
+    const passwordInput = document.getElementById("teacherPassword");
+    const nameInput = document.getElementById("teacherName");
+    const nameWrapper = document.getElementById("nameWrapper");
     const submitBtn = document.getElementById("submitBtn");
-    const authError = document.getElementById("authError");
+    const btnLabel = document.getElementById("btnLabel");
+    const btnLoadingText = document.getElementById("btnLoadingText");
     const authForm = document.getElementById("authForm");
-    const toggleAuthMode = document.getElementById("toggleAuthMode");
-    const toggleAuthBtn = document.getElementById("toggleAuthBtn");
+    const errorBanner = document.getElementById("errorBanner");
+    const errorText = document.getElementById("errorText");
+    const emailIcon = document.getElementById("emailIcon");
+    const emailHint = document.getElementById("emailHint");
+    const passHint = document.getElementById("passHint");
+    const passToggle = document.getElementById("passToggle");
+    const passwordStrength = document.getElementById("passwordStrength");
+    const tabSignIn = document.getElementById("tabSignIn");
+    const tabSignUp = document.getElementById("tabSignUp");
+    const successOverlay = document.getElementById("successOverlay");
+    const successText = document.getElementById("successText");
 
-    let isSetupMode = false;
-    let setupRequired = false;
+    let mode = "signin"; // "signin" or "signup"
 
-    async function checkAuthStatus() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        
-        // If already logged in, redirect to dashboard
-        if (data.teacher) {
-          window.location.href = "/teacher";
-          return;
-        }
-
-        setupRequired = data.setup_required;
-
-        if (setupRequired) {
-          setAuthMode(true);
-          formSubheading.textContent = "FIRST RUN SETUP";
-          formDescription.textContent = "Establish the administrator teacher account for this system. Use these credentials to sign in next time.";
-          toggleAuthMode.style.display = "none";
-        } else {
-          setAuthMode(false);
-          formSubheading.textContent = "TEACHER PORTAL";
-          formDescription.textContent = "Access assessment builder, sharing, student submissions, and grading workspace.";
-          toggleAuthMode.style.display = "block";
-        }
-      } catch {
-        authError.textContent = "Failed to communicate with the server. Please verify it is running.";
-      }
-    }
-
-    function setAuthMode(setupMode) {
-      isSetupMode = setupMode;
-      authError.textContent = "";
-      if (setupMode) {
-        formTitle.textContent = "Create Teacher Account";
-        formStep.textContent = "Setup";
-        setupFields.style.display = "grid";
-        teacherName.required = true;
-        inviteCode.required = true;
-        submitBtn.innerHTML = 'Create Account & Sign In <span aria-hidden="true">→</span>';
-        toggleAuthBtn.textContent = "Already have an account? Sign In";
+    // ─── Mode switching ───
+    function setMode(newMode) {
+      mode = newMode;
+      if (mode === "signup") {
+        tabSignUp.classList.add("tab-active");
+        tabSignUp.setAttribute("aria-selected", "true");
+        tabSignIn.classList.remove("tab-active");
+        tabSignIn.setAttribute("aria-selected", "false");
+        nameWrapper.classList.add("visible");
+        passwordInput.setAttribute("autocomplete", "new-password");
+        btnLabel.innerHTML = 'Create Account <span aria-hidden="true">→</span>';
+        btnLoadingText.textContent = "Creating account…";
+        passwordStrength.style.display = "flex";
       } else {
-        formTitle.textContent = "Sign In";
-        formStep.textContent = "Auth";
-        setupFields.style.display = "none";
-        teacherName.required = false;
-        inviteCode.required = false;
-        submitBtn.innerHTML = 'Sign In <span aria-hidden="true">→</span>';
-        toggleAuthBtn.textContent = "Don't have an account? Sign Up";
+        tabSignIn.classList.add("tab-active");
+        tabSignIn.setAttribute("aria-selected", "true");
+        tabSignUp.classList.remove("tab-active");
+        tabSignUp.setAttribute("aria-selected", "false");
+        nameWrapper.classList.remove("visible");
+        passwordInput.setAttribute("autocomplete", "current-password");
+        btnLabel.innerHTML = 'Sign In <span aria-hidden="true">→</span>';
+        btnLoadingText.textContent = "Signing in…";
+        passwordStrength.style.display = "none";
       }
+      hideError();
     }
 
-    toggleAuthBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      setAuthMode(!isSetupMode);
+    // ─── Password visibility toggle ───
+    function togglePassword() {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      passToggle.textContent = isPassword ? "🙈" : "👁";
+      passToggle.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    }
+
+    // ─── Validation ───
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function getPasswordStrength(password) {
+      let score = 0;
+      if (password.length >= 6) score++;
+      if (password.length >= 8) score++;
+      if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+      if (/\d/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
+      return score;
+    }
+
+    function updatePasswordStrength() {
+      const pw = passwordInput.value;
+      const bars = [
+        document.getElementById("str1"),
+        document.getElementById("str2"),
+        document.getElementById("str3"),
+        document.getElementById("str4"),
+      ];
+      const score = getPasswordStrength(pw);
+      const classes = ["", "filled-weak", "filled-medium", "filled-medium", "filled-strong"];
+      bars.forEach((bar, i) => {
+        bar.className = "strength-bar";
+        if (i < score) bar.classList.add(classes[score]);
+      });
+    }
+
+    emailInput.addEventListener("blur", () => {
+      const email = emailInput.value.trim();
+      if (!email) {
+        emailIcon.className = "field-icon";
+        emailInput.classList.remove("input-valid", "input-invalid");
+        emailHint.textContent = "";
+        return;
+      }
+      if (isValidEmail(email)) {
+        emailInput.classList.remove("input-invalid");
+        emailInput.classList.add("input-valid");
+        emailIcon.className = "field-icon visible valid";
+        emailIcon.textContent = "✓";
+        emailHint.textContent = "";
+        emailHint.classList.remove("error");
+      } else {
+        emailInput.classList.remove("input-valid");
+        emailInput.classList.add("input-invalid");
+        emailIcon.className = "field-icon visible invalid";
+        emailIcon.textContent = "✕";
+        emailHint.textContent = "Please enter a valid email address";
+        emailHint.classList.add("error");
+      }
     });
 
+    passwordInput.addEventListener("input", () => {
+      if (mode === "signup") updatePasswordStrength();
+      const pw = passwordInput.value;
+      if (pw.length > 0 && pw.length < 6) {
+        passHint.textContent = `${6 - pw.length} more character${6 - pw.length !== 1 ? "s" : ""} needed`;
+        passHint.classList.add("error");
+      } else {
+        passHint.textContent = "";
+        passHint.classList.remove("error");
+      }
+    });
+
+    // ─── Error display ───
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBanner.classList.add("visible");
+      // Re-trigger shake animation
+      errorBanner.style.animation = "none";
+      errorBanner.offsetHeight; // Force reflow
+      errorBanner.style.animation = "";
+    }
+
+    function hideError() {
+      errorBanner.classList.remove("visible");
+      errorText.textContent = "";
+    }
+
+    // ─── Success animation ───
+    function showSuccess(name) {
+      successText.textContent = mode === "signup"
+        ? `Welcome, ${name || "Teacher"}!`
+        : "Welcome back!";
+      successOverlay.classList.add("visible");
+    }
+
+    function getRedirectUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const target = params.get("redirect") || params.get("next");
+      if (target && target.startsWith("/") && !target.startsWith("//")) {
+        return target;
+      }
+      return "/teacher";
+    }
+
+    // ─── Check if already logged in ───
+    async function checkAuthStatus() {
+      await Auth.check();
+    }
+
+    // ─── Form submit ───
     authForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      authError.textContent = "";
-      submitBtn.disabled = true;
+      hideError();
 
-      const url = isSetupMode ? "/api/auth/setup" : "/api/auth/login";
-      const payload = {
-        email: teacherEmail.value.trim(),
-        password: teacherPassword.value
-      };
-      if (isSetupMode) {
-        payload.display_name = teacherName.value.trim();
-        payload.invite_code = inviteCode.value.trim();
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      const displayName = nameInput.value.trim();
+
+      // Client-side validation
+      if (!email || !isValidEmail(email)) {
+        showError("Please enter a valid email address.");
+        emailInput.focus();
+        return;
+      }
+      if (password.length < 6) {
+        showError("Password must be at least 6 characters.");
+        passwordInput.focus();
+        return;
+      }
+      if (mode === "signup" && !displayName) {
+        showError("Please enter your display name.");
+        nameInput.focus();
+        return;
       }
 
+      // Set loading state
+      submitBtn.disabled = true;
+      submitBtn.classList.add("loading");
+
+      const payload = {
+        email: email,
+        password: password,
+        display_name: displayName || undefined,
+      };
+
       try {
-        const res = await fetch(url, {
+        const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Authentication failed.");
-        
-        // Redirect to dashboard
-        window.location.href = "/teacher";
+
+        // Success!
+        const teacherName = data.teacher?.display_name || displayName || email.split("@")[0];
+        showSuccess(teacherName);
+
+        // Brief pause for the animation, then redirect
+        setTimeout(() => {
+          window.location.href = getRedirectUrl();
+        }, 900);
       } catch (err) {
-        authError.textContent = err.message;
+        showError(err.message);
         submitBtn.disabled = false;
+        submitBtn.classList.remove("loading");
       }
     });
 
+    // ─── Init ───
     checkAuthStatus();
   </script>
 </body>

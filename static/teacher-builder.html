@@ -6,6 +6,8 @@
   <meta name="description" content="Build or edit a structured classroom viva assessment.">
   <title>Assessment Builder · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+  <script src="/static/auth.js"></script>
   <style>
     .builder-grid {
       display: grid;
@@ -63,6 +65,7 @@
         <span>viva<span class="brand-dot">.</span></span>
       </a>
       <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
       <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;">Back to Dashboard</a>
     </header>
 
@@ -164,7 +167,7 @@
           </div>
 
           <!-- AI Draft Question Generator -->
-          <details class="ai-settings" style="margin-bottom: 20px; border-color: #f3efff; background: #faf9ff;">
+          <details class="ai-settings" style="margin-bottom: 20px;">
             <summary style="color: var(--violet);"><span class="settings-icon" style="color:var(--violet);">✦</span> AI Draft Generator <span class="summary-helper" style="color: #9f88ec;">Auto-generate drafts</span></summary>
             <div class="ai-settings-content">
               <p style="color: #7b62cc;">Upload reference notes or a curriculum file to let OpenAI generate draft questions.</p>
@@ -291,28 +294,17 @@
     });
 
     async function checkLogin() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        if (!data.teacher) {
-          window.location.href = "/teacher/login";
-          return;
-        }
-        teacher = data.teacher;
-        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
-        
+      const activeTeacher = await Auth.check();
+      if (activeTeacher) {
+        teacher = activeTeacher;
         if (assessmentId) {
           loadAssessmentDetails();
-        } else {
-          // Initialize with 3 empty questions
+        } else if (questionsList.length === 0) {
           addQuestionRow();
           addQuestionRow();
           addQuestionRow();
           vivaCountMode.dispatchEvent(new Event("change"));
         }
-      } catch {
-        window.location.href = "/teacher/login";
       }
     }
 

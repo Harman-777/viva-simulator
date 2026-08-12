@@ -6,6 +6,7 @@
   <meta name="description" content="Personal AI preparation workspace. Upload materials, generate custom question sets, and practice.">
   <title>Prep Workspace · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <style>
     /* Premium dual panel styling for prep space */
     .prep-grid {
@@ -150,6 +151,7 @@
         <a class="nav-link nav-link-active" href="/questions">Practice Library</a>
       </nav>
       <div class="status-indicator">
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-right: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
         <span class="status-dot"></span>
         <span id="libraryStatus">AI Practice Connected</span>
       </div>

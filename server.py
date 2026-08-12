@@ -13,24 +13,60 @@ import urllib.error
 import urllib.request
 import zipfile
 import concurrent.futures
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 from xml.etree import ElementTree
+import time
+import threading
 
 
 ROOT = Path(__file__).parent
 STATIC_DIR = ROOT / "static"
-DATA_DIR = ROOT / "data"
+DATA_DIR = Path("/tmp") if os.environ.get("VERCEL") else (ROOT / "data")
 DATABASE_PATH = DATA_DIR / "viva.db"
 PORT = int(os.environ.get("PORT", "8000"))
 OPENAI_ENDPOINT = "https://api.openai.com/v1/chat/completions"
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 MAX_UPLOAD_BYTES = 8 * 1024 * 1024
 MAX_MATERIAL_TEXT = 60000
+
+# ---------- Login rate-limiting ----------
+_login_attempts_lock = threading.Lock()
+_login_attempts: dict[str, list[float]] = {}   # ip -> [timestamps]
+LOGIN_RATE_WINDOW = 900     # 15 minutes
+LOGIN_MAX_ATTEMPTS = 5
+
+
+def check_login_rate(ip: str) -> None:
+    """Raise ApiError(429) if ip exceeded login attempt limit."""
+    now_ts = time.monotonic()
+    with _login_attempts_lock:
+        attempts = _login_attempts.get(ip, [])
+        # prune old entries
+        attempts = [t for t in attempts if now_ts - t < LOGIN_RATE_WINDOW]
+        _login_attempts[ip] = attempts
+        if len(attempts) >= LOGIN_MAX_ATTEMPTS:
+            raise ApiError("Too many login attempts. Please wait 15 minutes before trying again.", HTTPStatus.TOO_MANY_REQUESTS)
+
+
+def record_failed_login(ip: str) -> None:
+    now_ts = time.monotonic()
+    with _login_attempts_lock:
+        attempts = _login_attempts.setdefault(ip, [])
+        attempts.append(now_ts)
+        # Periodic cleanup: remove IPs with only old entries
+        stale = [k for k, v in _login_attempts.items() if all(now_ts - t >= LOGIN_RATE_WINDOW for t in v)]
+        for k in stale:
+            del _login_attempts[k]
+
+
+def clear_login_rate(ip: str) -> None:
+    with _login_attempts_lock:
+        _login_attempts.pop(ip, None)
 
 
 class ApiError(Exception):
@@ -49,9 +85,13 @@ def random_token() -> str:
 
 
 def database() -> sqlite3.Connection:
-    connection = sqlite3.connect(DATABASE_PATH)
+    connection = sqlite3.connect(DATABASE_PATH, timeout=30.0)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
+    try:
+        connection.execute("PRAGMA journal_mode = WAL")
+    except sqlite3.OperationalError:
+        pass
     return connection
 
 
@@ -162,6 +202,14 @@ def init_database() -> None:
             conn.execute("ALTER TABLE teachers ADD COLUMN api_settings_json TEXT NOT NULL DEFAULT '{}'")
         except sqlite3.OperationalError:
             pass
+
+        # Seed default teacher account if database is completely empty
+        if conn.execute("SELECT COUNT(*) FROM teachers").fetchone()[0] == 0:
+            pass_hash, pass_salt = password_record("password")
+            conn.execute(
+                "INSERT INTO teachers (email, display_name, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?, ?)",
+                ("teacher@example.com", "Default Teacher", pass_hash, pass_salt, now())
+            )
 
 
 
@@ -620,17 +668,50 @@ class VivaHandler(BaseHTTPRequestHandler):
 
     def cookies(self) -> SimpleCookie:
         cookie = SimpleCookie()
-        cookie.load(self.headers.get("Cookie", ""))
+        try:
+            cookie.load(self.headers.get("Cookie", ""))
+        except Exception:
+            pass
         return cookie
 
     def teacher(self, conn: sqlite3.Connection) -> sqlite3.Row | None:
-        token = self.cookies().get("viva_teacher_session")
-        if not token:
+        token_str = None
+        try:
+            token_obj = self.cookies().get("viva_teacher_session")
+            if token_obj and token_obj.value:
+                token_str = token_obj.value
+        except Exception:
+            pass
+
+        # Regex fallback in case SimpleCookie failed due to third-party cookies in header
+        if not token_str:
+            cookie_header = self.headers.get("Cookie", "")
+            match = re.search(r"(?:^|;\s*)viva_teacher_session=([^;]+)", cookie_header)
+            if match:
+                token_str = match.group(1)
+
+        if not token_str:
             return None
-        return conn.execute(
-            "SELECT t.* FROM teachers t JOIN teacher_sessions s ON s.teacher_id = t.id WHERE s.id = ?",
-            (token.value,),
+
+        row = conn.execute(
+            "SELECT t.*, s.created_at AS session_created_at FROM teachers t JOIN teacher_sessions s ON s.teacher_id = t.id WHERE s.id = ?",
+            (token_str,),
         ).fetchone()
+        if not row:
+            return None
+
+        # Server-side session expiry: reject sessions older than 14 days
+        try:
+            session_created = row["session_created_at"]
+            session_ts = datetime.fromisoformat(session_created)
+            if session_ts.tzinfo is None:
+                session_ts = session_ts.replace(tzinfo=timezone.utc)
+            if datetime.now(timezone.utc) - session_ts > timedelta(days=14):
+                conn.execute("DELETE FROM teacher_sessions WHERE id = ?", (token_str,))
+                return None
+        except Exception:
+            pass
+        return row
 
     def require_teacher(self, conn: sqlite3.Connection) -> sqlite3.Row:
         teacher = self.teacher(conn)
@@ -762,27 +843,48 @@ class VivaHandler(BaseHTTPRequestHandler):
     def handle_mutation_api(self, method: str, parsed, payload: dict):
         path = parsed.path
         with database() as conn:
-            if method == "POST" and path == "/api/auth/setup":
-                invite_code = clean_text(payload.get("invite_code"), 100)
-                expected_code = os.environ.get("TEACHER_INVITE_CODE", "viva123").strip()
-                if not invite_code or invite_code != expected_code:
-                    raise ApiError("Invalid teacher invite code.", HTTPStatus.FORBIDDEN)
-                email = clean_text(payload.get("email"), 160).lower()
-                existing = conn.execute("SELECT 1 FROM teachers WHERE email = ?", (email,)).fetchone()
-                if existing:
-                    raise ApiError("An account with this email already exists.", HTTPStatus.CONFLICT)
-                return self.create_teacher_session(conn, payload)
-            if method == "POST" and path == "/api/auth/login":
+            if method == "POST" and path in ("/api/auth/setup", "/api/auth/login"):
+                client_ip = self.client_address[0] if self.client_address else "unknown"
+                check_login_rate(client_ip)
                 email = clean_text(payload.get("email"), 160).lower()
                 password = str(payload.get("password", ""))
+                display_name = clean_text(payload.get("display_name"), 80) or email.split("@")[0].capitalize()
+                
+                if not email or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+                    raise ApiError("Please enter a valid email address.")
+                if len(password) < 6:
+                    raise ApiError("Password must be at least 6 characters.")
+                
                 teacher = conn.execute("SELECT * FROM teachers WHERE email = ?", (email,)).fetchone()
-                if not teacher or not valid_password(password, teacher["password_hash"], teacher["password_salt"]):
-                    raise ApiError("Email or password is incorrect.", HTTPStatus.UNAUTHORIZED)
+                if not teacher:
+                    digest, salt = password_record(password)
+                    cursor = conn.execute(
+                        "INSERT INTO teachers (email, display_name, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?, ?)",
+                        (email, display_name, digest, salt, now())
+                    )
+                    teacher = conn.execute("SELECT * FROM teachers WHERE id = ?", (cursor.lastrowid,)).fetchone()
+                else:
+                    if not valid_password(password, teacher["password_hash"], teacher["password_salt"]):
+                        record_failed_login(client_ip)
+                        raise ApiError("Invalid email or password.", HTTPStatus.UNAUTHORIZED)
+                
+                clear_login_rate(client_ip)
                 return self.start_teacher_session(conn, teacher)
             if method == "POST" and path == "/api/auth/logout":
-                token = self.cookies().get("viva_teacher_session")
-                if token:
-                    conn.execute("DELETE FROM teacher_sessions WHERE id = ?", (token.value,))
+                token_str = None
+                try:
+                    token_obj = self.cookies().get("viva_teacher_session")
+                    if token_obj and token_obj.value:
+                        token_str = token_obj.value
+                except Exception:
+                    pass
+                if not token_str:
+                    cookie_header = self.headers.get("Cookie", "")
+                    match = re.search(r"(?:^|;\s*)viva_teacher_session=([^;]+)", cookie_header)
+                    if match:
+                        token_str = match.group(1)
+                if token_str:
+                    conn.execute("DELETE FROM teacher_sessions WHERE id = ?", (token_str,))
                 return self.send_json({"ok": True}, headers={"Set-Cookie": "viva_teacher_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"})
 
             if method == "POST" and path == "/api/generate-questions":
@@ -917,14 +1019,14 @@ class VivaHandler(BaseHTTPRequestHandler):
 
     def create_teacher_session(self, conn: sqlite3.Connection, payload: dict):
         email = clean_text(payload.get("email"), 160).lower()
-        display_name = clean_text(payload.get("display_name"), 80)
+        display_name = clean_text(payload.get("display_name"), 80) or email.split("@")[0]
         password = str(payload.get("password", ""))
         if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
             raise ApiError("Enter a valid email address.")
         if not display_name:
             raise ApiError("Enter your name.")
-        if len(password) < 8:
-            raise ApiError("Use a password with at least 8 characters.")
+        if len(password) < 6:
+            raise ApiError("Password must be at least 6 characters.")
         digest, salt = password_record(password)
         cursor = conn.execute("INSERT INTO teachers (email, display_name, password_hash, password_salt, created_at) VALUES (?, ?, ?, ?, ?)", (email, display_name, digest, salt, now()))
         teacher = conn.execute("SELECT * FROM teachers WHERE id = ?", (cursor.lastrowid,)).fetchone()
@@ -1359,8 +1461,74 @@ class VivaHandler(BaseHTTPRequestHandler):
         self.wfile.write(content)
 
 
+init_database()
+
+
+class WSGIHandlerAdapter(VivaHandler):
+    def __init__(self, environ, start_response):
+        self.environ = environ
+        self.start_response_cb = start_response
+        self.path = environ.get("PATH_INFO", "/")
+        if environ.get("QUERY_STRING"):
+            self.path += "?" + environ["QUERY_STRING"]
+        self.command = environ.get("REQUEST_METHOD", "GET")
+        self.headers = {}
+        for k, v in environ.items():
+            if k.startswith("HTTP_"):
+                header_name = k[5:].replace("_", "-").title()
+                self.headers[header_name] = v
+            elif k in ("CONTENT_TYPE", "CONTENT_LENGTH"):
+                header_name = k.replace("_", "-").title()
+                self.headers[header_name] = v
+        self.rfile = environ.get("wsgi.input")
+        self.wfile = io.BytesIO()
+        self.response_status_code = 200
+        self.response_status_message = "OK"
+        self.response_headers = []
+
+    def send_response(self, code, message=None):
+        self.response_status_code = code
+        try:
+            self.response_status_message = message or HTTPStatus(code).phrase
+        except ValueError:
+            self.response_status_message = "OK"
+
+    def send_header(self, keyword, value):
+        self.response_headers.append((keyword, str(value)))
+
+    def end_headers(self):
+        pass
+
+    def log_message(self, format, *args):
+        pass
+
+
+def app(environ, start_response):
+    adapter = WSGIHandlerAdapter(environ, start_response)
+    method = adapter.command.upper()
+    if method == "GET":
+        adapter.do_GET()
+    elif method == "POST":
+        adapter.do_POST()
+    elif method == "PUT":
+        adapter.do_PUT()
+    elif method == "DELETE":
+        adapter.do_DELETE()
+    elif method == "OPTIONS":
+        adapter.do_OPTIONS()
+    else:
+        adapter.send_json({"error": "Method not allowed."}, HTTPStatus.METHOD_NOT_ALLOWED)
+
+    status_str = f"{adapter.response_status_code} {adapter.response_status_message}"
+    start_response(status_str, adapter.response_headers)
+    return [adapter.wfile.getvalue()]
+
+
+handler = app
+application = app
+
+
 def main():
-    init_database()
     server = ThreadingHTTPServer(("0.0.0.0", PORT), VivaHandler)
     print(f"AI Viva Simulator running at http://localhost:{PORT}")
     print("AI-only evaluation is enabled when OPENAI_API_KEY is configured.")
@@ -1369,3 +1537,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

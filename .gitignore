@@ -14,8 +14,10 @@ Thumbs.db
 .idea/
 
 # Database files
-*.db
-data/*.db
+*.db*
+data/*.db*
 
 # Logs
 *.log
+
+.vercel

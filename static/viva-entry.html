@@ -6,6 +6,7 @@
   <meta name="description" content="Enter your assigned viva details to begin the exam.">
   <title>Viva Entry · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <style>
     .entry-card {
       max-width: 580px;
@@ -54,6 +55,7 @@
         <span>viva<span class="brand-dot">.</span></span>
       </a>
       <div class="status-indicator">
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-right: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
         <span class="status-dot"></span>
         <span id="entryStatus">Exam Portal</span>
       </div>

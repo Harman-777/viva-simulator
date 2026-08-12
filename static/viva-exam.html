@@ -6,6 +6,7 @@
   <meta name="description" content="Take your assigned viva assessment.">
   <title>Assigned Viva Exam · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <style>
     .exam-header {
       display: flex;
@@ -57,9 +58,12 @@
         <p class="eyebrow" style="color: #8fc7ff;" id="studentInfo">Student Attempt</p>
         <h2 style="color:#fff; margin:0; font-size: 20px; letter-spacing: -0.02em;" id="examTitle">Loading Viva...</h2>
       </div>
-      <div class="exam-timer" id="timerWrapper" style="display:none;">
-        <span class="settings-icon">⏳</span>
-        <span id="timerDisplay">00:00</span>
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">🌙 <span class="theme-btn-text">Dark</span></button>
+        <div class="exam-timer" id="timerWrapper" style="display:none;">
+          <span class="settings-icon">⏳</span>
+          <span id="timerDisplay">00:00</span>
+        </div>
       </div>
     </div>
 

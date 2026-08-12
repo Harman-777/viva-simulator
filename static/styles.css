@@ -353,3 +353,124 @@ input:focus, select:focus, textarea:focus { outline: 0; border-color: #72a7fb; b
   font-weight: 700;
 }
 
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 6px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.theme-toggle-btn:hover {
+  border-color: var(--blue);
+  background: var(--soft-blue);
+  color: var(--blue);
+}
+
+/* Dark Mode Tokens & Overrides */
+[data-theme="dark"] {
+  --ink: #f1f5f9;
+  --ink-soft: #94a3b8;
+  --muted: #94a3b8;
+  --line: #1e293b;
+  --line-strong: #334155;
+  --canvas: #0b1329;
+  --surface: #131c35;
+  --soft-blue: #1e2942;
+  --blue: #3b82f6;
+  --blue-dark: #60a5fa;
+  --navy: #0f172a;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md: 0 10px 30px rgba(0,0,0,0.7);
+}
+
+[data-theme="dark"] input,
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+  background: #0f172a;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] textarea::placeholder {
+  color: #64748b;
+}
+
+[data-theme="dark"] .button-quiet,
+[data-theme="dark"] .timer-preset-btn {
+  background: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .feedback-card,
+[data-theme="dark"] .report-card,
+[data-theme="dark"] .model-answer-details,
+[data-theme="dark"] .notes-details,
+[data-theme="dark"] .empty-state {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .question-stage,
+[data-theme="dark"] .ai-settings,
+[data-theme="dark"] .viva-notes-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] select {
+  background-image: linear-gradient(45deg, transparent 50%, #94a3b8 50%), linear-gradient(135deg, #94a3b8 50%, transparent 50%);
+}
+
+[data-theme="dark"] .nav-link:hover,
+[data-theme="dark"] .nav-link-active {
+  color: #f1f5f9;
+  background: #1e293b;
+}
+
+[data-theme="dark"] .question-row,
+[data-theme="dark"] .control-row,
+[data-theme="dark"] .viva-meta-info,
+[data-theme="dark"] .feedback-q-card,
+[data-theme="dark"] .response-section {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .response-section-accepted {
+  background: #1e2942;
+  border-left-color: #3b82f6;
+}
+
+[data-theme="dark"] .chart-container,
+[data-theme="dark"] .candidate-meta-card,
+[data-theme="dark"] .question-review-card,
+[data-theme="dark"] .entry-card,
+[data-theme="dark"] .complete-card,
+[data-theme="dark"] .share-card,
+[data-theme="dark"] .panel {
+  background: #131c35;
+  border-color: #1e293b;
+}
+
+[data-theme="dark"] .student-table th,
+[data-theme="dark"] .student-table td {
+  border-bottom-color: #1e293b;
+}
+
+[data-theme="dark"] .histogram {
+  border-bottom-color: #334155;
+}
+
+
+

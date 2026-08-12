@@ -6,6 +6,7 @@
   <meta name="description" content="Student dashboard — manage your API key, access practice library, and join assigned vivas.">
   <title>Student Dashboard · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
   <style>
     .student-hero {
       padding: 48px 0 28px;
@@ -123,6 +124,7 @@
         <a class="nav-link" href="/questions">Practice Library</a>
       </nav>
       <div class="status-indicator">
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-right: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
         <span class="status-dot" id="statusDot"></span>
         <span id="connectionStatus">Checking...</span>
       </div>

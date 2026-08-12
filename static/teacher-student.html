@@ -6,6 +6,8 @@
   <meta name="description" content="Audit and grade student viva responses, review AI rationale, and apply overrides.">
   <title>Student Review Workspace · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+  <script src="/static/auth.js"></script>
   <style>
     .student-detail-header {
       display: grid;
@@ -78,6 +80,7 @@
         <span>viva<span class="brand-dot">.</span></span>
       </a>
       <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
       <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;" id="dashboardBackBtn">Back to Dashboard</a>
     </header>
 
@@ -149,24 +152,14 @@
     let answers = [];
 
     async function checkLogin() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        if (!data.teacher) {
-          window.location.href = "/teacher/login";
-          return;
-        }
-        teacher = data.teacher;
-        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
-        
+      const activeTeacher = await Auth.check();
+      if (activeTeacher) {
+        teacher = activeTeacher;
         if (attemptId) {
           loadAttemptDetails();
         } else {
           window.location.href = "/teacher";
         }
-      } catch {
-        window.location.href = "/teacher/login";
       }
     }
 

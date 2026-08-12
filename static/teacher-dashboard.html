@@ -6,6 +6,8 @@
   <meta name="description" content="Manage assessments, links, and student completions.">
   <title>Teacher Dashboard · viva.</title>
   <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/theme.js"></script>
+  <script src="/static/auth.js"></script>
   <style>
     .dashboard-header {
       display: flex;
@@ -58,6 +60,7 @@
         <span>viva<span class="brand-dot">.</span></span>
       </a>
       <span class="back-link" id="teacherDisplay">Teacher Session</span>
+      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
       <button id="signOutBtn" class="button button-quiet button-compact" style="margin-left: 12px;">Sign Out</button>
     </header>
 
@@ -138,19 +141,9 @@
     let teacher = null;
 
     async function checkLogin() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        if (!data.teacher) {
-          window.location.href = "/teacher/login";
-          return;
-        }
-        teacher = data.teacher;
-        teacherDisplay.textContent = `Signed in as ${teacher.display_name}`;
+      const teacher = await Auth.check();
+      if (teacher) {
         loadAssessments();
-      } catch {
-        window.location.href = "/teacher/login";
       }
     }
 
@@ -211,13 +204,8 @@
       return true;
     }
 
-    signOutBtn.addEventListener("click", async () => {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-        window.location.href = "/";
-      } catch {
-        alert("Logout failed.");
-      }
+    signOutBtn.addEventListener("click", () => {
+      Auth.logout();
     });
 
     function escapeHtml(value) {
