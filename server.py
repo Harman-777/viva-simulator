@@ -846,7 +846,8 @@ class VivaHandler(BaseHTTPRequestHandler):
         path = parsed.path
         with database() as conn:
             if method == "POST" and path in ("/api/auth/setup", "/api/auth/login"):
-                client_ip = self.client_address[0] if self.client_address else "unknown"
+                client_addr = getattr(self, "client_address", None)
+                client_ip = client_addr[0] if client_addr and isinstance(client_addr, (tuple, list)) else (self.headers.get("X-Forwarded-For") or "unknown").split(",")[0].strip()
                 check_login_rate(client_ip)
                 email = clean_text(payload.get("email"), 160).lower()
                 password = str(payload.get("password", ""))
@@ -1470,6 +1471,7 @@ class WSGIHandlerAdapter(VivaHandler):
     def __init__(self, environ, start_response):
         self.environ = environ
         self.start_response_cb = start_response
+        self.client_address = (environ.get("REMOTE_ADDR", "127.0.0.1"), 0)
         self.path = environ.get("PATH_INFO", "/")
         if environ.get("QUERY_STRING"):
             self.path += "?" + environ["QUERY_STRING"]
