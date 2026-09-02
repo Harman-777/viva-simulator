@@ -1,327 +1,450 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Manage assessments, links, and student completions.">
-  <title>Teacher Dashboard · viva.</title>
+  <meta name="description" content="Teacher Command Center — Manage viva assessments, question banks, AI grading, and live student evaluations.">
+  <title>Teacher Dashboard · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <script src="/static/auth.js"></script>
   <style>
-    .dashboard-header {
+    .teacher-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      margin: 28px 0 24px;
+      flex-wrap: wrap;
+      gap: 16px;
     }
-    .assessment-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 18px;
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      margin-bottom: 28px;
     }
-    .assessment-table th, .assessment-table td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid var(--line);
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .assessment-table th {
-      font-weight: 750;
-      color: var(--muted);
-      font-size: 12px;
+
+    .kpi-value {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .kpi-label {
+      font-size: 12.5px;
+      font-weight: 650;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
-    .assessment-table td {
-      font-size: 14px;
-      color: var(--ink);
-    }
-    .status-badge {
-      display: inline-flex;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-    .badge-published { color: var(--green); background: #e6f6f0; }
-    .badge-draft { color: var(--muted); background: var(--canvas); }
-    .action-links {
+
+    .assessment-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      margin-bottom: 14px;
       display: flex;
-      gap: 12px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      transition: all var(--transition-fast);
+    }
+
+    .assessment-card:hover {
+      border-color: var(--border-active);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .preset-btn {
+      font-size: 11.5px;
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-active);
+      color: var(--primary);
+      cursor: pointer;
+      font-weight: 700;
+      transition: all var(--transition-fast);
+    }
+
+    .preset-btn:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .assessment-card { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 500px) {
+      .kpi-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
       </a>
-      <span class="back-link" id="teacherDisplay">Teacher Session</span>
-      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-      <button id="signOutBtn" class="button button-quiet button-compact" style="margin-left: 12px;">Sign Out</button>
+      <div class="topbar-actions">
+        <span class="badge badge-primary" id="teacherDisplay">Teacher Session</span>
+        <button type="button" class="button button-quiet button-compact" onclick="Auth.logout()">Sign Out</button>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
+      </div>
     </header>
 
-    <div class="dashboard-header" style="margin-top: 32px;">
+    <div class="teacher-header">
       <div>
-        <p class="eyebrow">Instructor Control Workspace</p>
-        <h1 style="margin: 6px 0 0; font-size: 32px; font-weight: 900; letter-spacing: -0.04em;">Assigned Vivas</h1>
+        <p class="eyebrow">Instructor Command Center</p>
+        <h1>Viva <span>Assessments &amp; Analytics</span></h1>
       </div>
-      <a href="/teacher/vivas/new" class="button button-primary">Create New Viva <span aria-hidden="true">+</span></a>
+      <div style="display: flex; gap: 12px;">
+        <a href="/teacher/vivas/new" class="button button-primary">+ Author New Assessment</a>
+      </div>
     </div>
 
-    <!-- API Key Settings Panel -->
-    <details class="ai-settings" style="margin-bottom: 18px;">
-      <summary>
-        <span class="settings-icon">⚙️</span>
-        AI Model Settings
-        <span class="summary-helper">▾</span>
-      </summary>
-      <div class="ai-settings-content">
-        <!-- Hidden trap inputs to prevent browser password managers from autofilling saved email/password into model name/API key -->
-        <div style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
-          <input type="text" name="fake_username_trap" tabindex="-1" autocomplete="username">
-          <input type="password" name="fake_password_trap" tabindex="-1" autocomplete="current-password">
-        </div>
-        <p>Configure the AI model used for question generation and answer evaluation. These settings apply to all your vivas.</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
-          <label>
-            API Key
-            <input id="teacherApiKeyInput" name="no_autofill_teacher_api_key" type="password" placeholder="sk-..." autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
-          </label>
-          <label>
-            Base URL (optional)
-            <input id="teacherBaseUrlInput" name="no_autofill_teacher_base_url" type="text" placeholder="http://localhost:11434/v1" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
-          </label>
-          <label>
-            Model Name (optional)
-            <input id="teacherModelNameInput" name="no_autofill_teacher_model_name" type="text" placeholder="qwen2.5-coder-32b-instruct" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false" style="width:100%; margin-top:4px;">
-          </label>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650;">
-            <span id="teacherApiDot" style="width:8px; height:8px; border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px #e9edf3; flex-shrink:0;"></span>
-            <span id="teacherApiStatusText" style="color:var(--muted);">Loading settings...</span>
-          </div>
+    <!-- Teacher AI Configuration Panel -->
+    <section class="panel" style="margin-bottom: 24px;">
+      <div class="panel-heading-spread">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="step-label">🤖</span>
           <div>
-            <button id="teacherToggleKeyBtn" class="button button-quiet button-compact" type="button">Show Key</button>
-            <button id="teacherSaveKeyBtn" class="button button-primary button-compact" type="button">Save Settings</button>
+            <p class="eyebrow">Instructor AI Engine</p>
+            <h2>AI Model &amp; Local LLM Configuration</h2>
           </div>
+        </div>
+        <span id="teacherAiStatus" class="badge badge-warning">Unconfigured</span>
+      </div>
+
+      <p style="font-size: 13px; color: var(--text-secondary); margin: 6px 0 14px;">
+        Configure the AI engine used to auto-generate question banks and grade student viva oral answers for your classroom.
+      </p>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center;">
+        <span style="font-size: 12px; color: var(--text-muted);">Quick Presets:</span>
+        <button type="button" class="preset-btn" onclick="setTeacherOllama('qwen2.5-coder:3b')">⚡ Ollama (qwen2.5-coder:3b)</button>
+        <button type="button" class="preset-btn" onclick="setTeacherOllama('llama3')">⚡ Ollama (llama3)</button>
+        <button type="button" class="preset-btn" onclick="setTeacherCloud('openai')">☁️ OpenAI (gpt-4o-mini)</button>
+        <button type="button" class="preset-btn" onclick="setTeacherCloud('gemini')">✨ Gemini (gemini-1.5-flash)</button>
+      </div>
+
+      <form id="teacherAiForm" onsubmit="saveTeacherAiConfig(event)">
+        <div class="field-row">
+          <div>
+            <label for="tApiKey">API Key (OpenAI / Gemini)</label>
+            <input type="password" id="tApiKey" placeholder="sk-... or AIza...">
+          </div>
+
+          <div>
+            <label for="tBaseUrl">Local LLM URL (Ollama / LM Studio)</label>
+            <input type="text" id="tBaseUrl" placeholder="e.g. http://localhost:11434">
+          </div>
+
+          <div>
+            <label for="tModelName">Model Name</label>
+            <input type="text" id="tModelName" placeholder="e.g. qwen2.5-coder:3b / gpt-4o-mini">
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px; flex-wrap: wrap; gap: 12px;">
+          <button type="button" id="testTeacherAiBtn" class="button button-secondary" onclick="testTeacherAiConnection()">
+            ⚡ Test Connection
+          </button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <span id="teacherAiMsg" style="font-size: 12px; font-weight: 700;"></span>
+            <button type="submit" class="button button-primary">Save AI Settings ✓</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- KPI Metric Summary Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Configured Vivas</span>
+        <div class="kpi-value" id="kpiTotalVivas">0</div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Student Submissions</span>
+        <div class="kpi-value" id="kpiTotalSubmissions">0</div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Published Assessments</span>
+        <div class="kpi-value" id="kpiPublishedCount">0</div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Needs Review</span>
+        <div class="kpi-value" id="kpiNeedsReview" style="color: var(--warning);">0</div>
+      </div>
+    </div>
+
+    <!-- Assessment List Section -->
+    <section class="panel">
+      <div class="panel-heading-spread" style="margin-bottom: 18px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span class="step-label">📋</span>
+          <div>
+            <p class="eyebrow">Repository</p>
+            <h2>Your Configured Assessments</h2>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <input type="text" id="assessmentSearchInput" placeholder="Search assessments..." style="max-width: 240px; padding: 6px 12px; font-size: 12.5px;" oninput="filterAssessments()">
         </div>
       </div>
-    </details>
 
-    <section class="panel" style="padding: 0; overflow-x: auto;">
-      <table class="assessment-table">
-        <thead>
-          <tr>
-            <th>Title & Subject</th>
-            <th>Status</th>
-            <th>Student Attempts</th>
-            <th>Last Updated</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="vivaListContainer">
-          <tr>
-            <td colspan="5" class="empty-state" style="border:none; min-height: 120px;">Fetching your viva assessments...</td>
-          </tr>
-        </tbody>
-      </table>
+      <div id="assessmentsContainer">
+        <p style="font-size: 13.5px; color: var(--text-muted); padding: 20px 0;">Loading assessments...</p>
+      </div>
     </section>
   </main>
 
   <script>
-    const teacherDisplay = document.getElementById("teacherDisplay");
-    const signOutBtn = document.getElementById("signOutBtn");
-    const vivaListContainer = document.getElementById("vivaListContainer");
+    const tApiKey = document.getElementById("tApiKey");
+    const tBaseUrl = document.getElementById("tBaseUrl");
+    const tModelName = document.getElementById("tModelName");
+    const teacherAiStatus = document.getElementById("teacherAiStatus");
+    const teacherAiMsg = document.getElementById("teacherAiMsg");
+    const testTeacherAiBtn = document.getElementById("testTeacherAiBtn");
 
-    let teacher = null;
+    let allAssessments = [];
 
-    async function checkLogin() {
-      const teacher = await Auth.check();
-      if (teacher) {
-        loadAssessments();
+    function setTeacherOllama(model = "qwen2.5-coder:3b") {
+      tApiKey.value = "";
+      tBaseUrl.value = "http://localhost:11434";
+      tModelName.value = model;
+      if (window.Toast) Toast.info(`Applied local Ollama (${model}) preset`);
+    }
+
+    function setTeacherCloud(provider) {
+      if (provider === "openai") {
+        tBaseUrl.value = "";
+        tModelName.value = "gpt-4o-mini";
+        tApiKey.placeholder = "sk-...";
+      } else {
+        tBaseUrl.value = "";
+        tModelName.value = "gemini-1.5-flash";
+        tApiKey.placeholder = "AIza...";
       }
+      tApiKey.focus();
+      if (window.Toast) Toast.info(`Applied ${provider === 'openai' ? 'OpenAI' : 'Gemini'} preset.`);
     }
 
-    async function loadAssessments() {
-      try {
-        const res = await fetch("/api/teacher/assessments");
-        if (!res.ok) throw new Error();
-        const data = await res.json();
-        renderAssessments(data.assessments || []);
-      } catch {
-        vivaListContainer.innerHTML = `<tr><td colspan="5" class="empty-state" style="border:none; color:var(--red);">Could not retrieve assessments. Ensure server is active.</td></tr>`;
-      }
-    }
-
-    function renderAssessments(assessments) {
-      if (assessments.length === 0) {
-        vivaListContainer.innerHTML = `<tr><td colspan="5" class="empty-state" style="border:none;">You have not created any assessments yet. Click "Create New Viva" to build your first.</td></tr>`;
-        return;
-      }
-
-      vivaListContainer.innerHTML = assessments.map(a => {
-        const statusClass = a.status === "published" ? "badge-published" : "badge-draft";
-        const dateStr = new Date(a.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        
-        return `
-          <tr>
-            <td>
-              <div style="font-weight: 750; font-size:15px;">${escapeHtml(a.title)}</div>
-              <div style="color:var(--muted); font-size:12px; margin-top:2px;">${escapeHtml(a.subject)} · ${a.duration_minutes} mins</div>
-            </td>
-            <td>
-              <span class="status-badge ${statusClass}">${a.status}</span>
-            </td>
-            <td>
-              <strong>${a.submitted_count}</strong> submitted <span style="color:var(--muted)">/ ${a.attempt_count} started</span>
-            </td>
-            <td style="color:var(--muted); font-size:13px;">
-              ${dateStr}
-            </td>
-            <td>
-              <div class="action-links">
-                <a href="/teacher/vivas/edit?id=${a.id}" class="button button-quiet button-compact" style="font-size:12px;">Edit</a>
-                <a href="/teacher/vivas/share?id=${a.id}" class="button button-quiet button-compact" style="font-size:12px;">Link</a>
-                <a href="/teacher/vivas/results?id=${a.id}" class="button button-primary button-compact" style="font-size:12px; ${a.attempt_count > 0 ? '' : 'opacity:0.48; cursor:not-allowed;'}" onclick="return checkAttemptsCount(event, ${a.attempt_count})">Results</a>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join("");
-    }
-
-    function checkAttemptsCount(event, count) {
-      if (count === 0) {
-        alert("This assessment does not have any student submissions yet.");
-        event.preventDefault();
-        return false;
-      }
-      return true;
-    }
-
-    signOutBtn.addEventListener("click", () => {
-      Auth.logout();
-    });
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    // --- AI Settings Management ---
-    const teacherApiKeyInput = document.getElementById("teacherApiKeyInput");
-    const teacherBaseUrlInput = document.getElementById("teacherBaseUrlInput");
-    const teacherModelNameInput = document.getElementById("teacherModelNameInput");
-    const teacherToggleKeyBtn = document.getElementById("teacherToggleKeyBtn");
-    const teacherSaveKeyBtn = document.getElementById("teacherSaveKeyBtn");
-    const teacherApiDot = document.getElementById("teacherApiDot");
-    const teacherApiStatusText = document.getElementById("teacherApiStatusText");
-
-    async function loadTeacherSettings() {
+    async function loadTeacherAiSettings() {
       try {
         const res = await fetch("/api/teacher/settings");
-        if (res.ok) {
-          const data = await res.json();
-          const s = data.settings || {};
-          
-          if (!s.api_key && teacherApiKeyInput.value) {
-            teacherApiKeyInput.value = "";
-          } else {
-            teacherApiKeyInput.value = s.api_key || "";
-          }
+        if (!res.ok) return;
+        const data = await res.json();
+        const s = data.settings || {};
 
-          teacherBaseUrlInput.value = s.base_url || "";
+        tApiKey.value = s.api_key || "";
+        tBaseUrl.value = s.base_url || "";
+        tModelName.value = s.model_name || "";
 
-          if (!s.model_name && (teacherModelNameInput.value.includes("@") || teacherModelNameInput.value.includes("."))) {
-            teacherModelNameInput.value = "";
-          } else {
-            teacherModelNameInput.value = s.model_name || "";
-          }
-          
-          if (s.api_key || s.base_url) {
-            teacherApiDot.style.background = "var(--green)";
-            teacherApiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
-            teacherApiStatusText.textContent = "Settings configured.";
-            teacherApiStatusText.style.color = "var(--green)";
-            
-            // Sync with local storage for frontend usage during creation
-            if (s.api_key) localStorage.setItem("viva_teacher_api_key", s.api_key);
-            if (s.base_url) localStorage.setItem("viva_teacher_base_url", s.base_url);
-            if (s.model_name) localStorage.setItem("viva_teacher_model_name", s.model_name);
-          } else {
-            teacherApiDot.style.background = "var(--muted)";
-            teacherApiDot.style.boxShadow = "0 0 0 3px #e9edf3";
-            teacherApiStatusText.textContent = "Using server default AI settings.";
-            teacherApiStatusText.style.color = "var(--muted)";
-          }
+        if (s.base_url) {
+          teacherAiStatus.className = "badge badge-success";
+          teacherAiStatus.textContent = `Local LLM: ${s.model_name || 'Ollama'}`;
+        } else if (s.api_key) {
+          const isGemini = (s.model_name && s.model_name.toLowerCase().includes("gemini")) || s.api_key.startsWith("AIza") || s.api_key.startsWith("AQ") || s.api_key.startsWith("AI") || (!s.api_key.startsWith("sk-"));
+          teacherAiStatus.className = "badge badge-success";
+          teacherAiStatus.textContent = isGemini ? `Gemini Ready (${s.model_name || 'gemini-1.5-flash'})` : `OpenAI Ready (${s.model_name || 'gpt-4o-mini'})`;
+        } else {
+          teacherAiStatus.className = "badge badge-warning";
+          teacherAiStatus.textContent = "Unconfigured";
         }
-      } catch (e) {
-        console.error("Failed to load settings", e);
-      }
+      } catch (_) {}
     }
 
-    teacherToggleKeyBtn.addEventListener("click", () => {
-      if (teacherApiKeyInput.type === "password") {
-        teacherApiKeyInput.type = "text";
-        teacherToggleKeyBtn.textContent = "Hide Key";
-      } else {
-        teacherApiKeyInput.type = "password";
-        teacherToggleKeyBtn.textContent = "Show Key";
-      }
-    });
+    async function saveTeacherAiConfig(e) {
+      e.preventDefault();
+      teacherAiMsg.textContent = "Saving AI settings...";
+      teacherAiMsg.style.color = "var(--primary)";
 
-    teacherSaveKeyBtn.addEventListener("click", async () => {
-      const api_key = teacherApiKeyInput.value.trim();
-      const base_url = teacherBaseUrlInput.value.trim();
-      const model_name = teacherModelNameInput.value.trim();
-      
-      teacherSaveKeyBtn.disabled = true;
-      teacherSaveKeyBtn.textContent = "Saving...";
-      
       try {
         const res = await fetch("/api/teacher/settings", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ api_key, base_url, model_name })
+          body: JSON.stringify({
+            api_key: tApiKey.value.trim(),
+            base_url: tBaseUrl.value.trim(),
+            model_name: tModelName.value.trim()
+          })
         });
-        
-        if (res.ok) {
-          if (api_key) localStorage.setItem("viva_teacher_api_key", api_key);
-          else localStorage.removeItem("viva_teacher_api_key");
-          
-          if (base_url) localStorage.setItem("viva_teacher_base_url", base_url);
-          else localStorage.removeItem("viva_teacher_base_url");
-          
-          if (model_name) localStorage.setItem("viva_teacher_model_name", model_name);
-          else localStorage.removeItem("viva_teacher_model_name");
 
-          teacherApiDot.style.background = "var(--green)";
-          teacherApiDot.style.boxShadow = "0 0 0 3px #d9f8eb";
-          teacherApiStatusText.textContent = "Settings saved successfully.";
-          teacherApiStatusText.style.color = "var(--green)";
-        } else {
-          throw new Error("Failed to save");
-        }
-      } catch (e) {
-        teacherApiStatusText.textContent = "Error saving settings.";
-        teacherApiStatusText.style.color = "var(--red)";
-      } finally {
-        teacherSaveKeyBtn.disabled = false;
-        teacherSaveKeyBtn.textContent = "Save Settings";
+        if (!res.ok) throw new Error("Failed to save settings");
+        teacherAiMsg.textContent = "✓ Settings saved!";
+        teacherAiMsg.style.color = "var(--success)";
+        if (window.Toast) Toast.success("Teacher AI settings saved successfully!");
+        await loadTeacherAiSettings();
+      } catch (err) {
+        teacherAiMsg.textContent = err.message;
+        teacherAiMsg.style.color = "var(--danger)";
+        if (window.Toast) Toast.error(err.message);
       }
-    });
+    }
 
-    loadTeacherSettings();
-    checkLogin();
+    async function testTeacherAiConnection() {
+      testTeacherAiBtn.disabled = true;
+      teacherAiMsg.textContent = "Testing connection...";
+      teacherAiMsg.style.color = "var(--primary)";
+
+      try {
+        const res = await fetch("/api/ai/test", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: tApiKey.value.trim(),
+            base_url: tBaseUrl.value.trim(),
+            model_name: tModelName.value.trim()
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Connection failed");
+
+        teacherAiMsg.textContent = `✓ ${data.message}`;
+        teacherAiMsg.style.color = "var(--success)";
+        if (window.Toast) Toast.success(`Connected to AI: ${data.engine} (${data.latency_ms}ms)`);
+      } catch (err) {
+        teacherAiMsg.textContent = `✕ ${err.message}`;
+        teacherAiMsg.style.color = "var(--danger)";
+        if (window.Toast) Toast.error(err.message);
+      } finally {
+        testTeacherAiBtn.disabled = false;
+      }
+    }
+
+    async function loadDashboard() {
+      const container = document.getElementById("assessmentsContainer");
+      try {
+        const res = await fetch("/api/teacher/assessments");
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = "/teacher/login";
+            return;
+          }
+          throw new Error("Failed to load assessments");
+        }
+
+        const data = await res.json();
+        allAssessments = data.assessments || [];
+
+        // Update KPIs
+        document.getElementById("kpiTotalVivas").textContent = allAssessments.length;
+        const totalSub = allAssessments.reduce((acc, v) => acc + (v.submitted_count || 0), 0);
+        document.getElementById("kpiTotalSubmissions").textContent = totalSub;
+        const pubCount = allAssessments.filter(v => v.status === "published").length;
+        document.getElementById("kpiPublishedCount").textContent = pubCount;
+
+        renderAssessmentList(allAssessments);
+      } catch (err) {
+        container.innerHTML = `<p style="color: var(--danger);">${err.message}</p>`;
+      }
+    }
+
+    function renderAssessmentList(vivas) {
+      const container = document.getElementById("assessmentsContainer");
+      if (!vivas.length) {
+        container.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px;">
+            <p style="font-size: 16px; font-weight: 700; color: var(--text-primary);">No assessments found.</p>
+            <p style="font-size: 13.5px; color: var(--text-muted); margin: 6px 0 20px;">Create a new oral exam assessment with custom rubrics and syllabus notes.</p>
+            <a href="/teacher/vivas/new" class="button button-primary">+ Author New Viva</a>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = vivas.map(v => {
+        const isPub = v.status === "published";
+        const aiGrading = v.ai_grading_enabled !== false;
+        return `
+          <div class="assessment-card" id="assCard-${v.id}">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap;">
+                <span class="badge ${isPub ? 'badge-success' : 'badge-neutral'}">${isPub ? 'Published' : 'Draft'}</span>
+                <span class="badge badge-primary">${v.subject}</span>
+                <span class="badge ${aiGrading ? 'badge-secondary' : 'badge-neutral'}">${aiGrading ? '🤖 AI Auto-Graded' : '👤 Manual Review'}</span>
+                <span style="font-size: 12px; font-family: var(--font-mono); color: var(--text-muted);">⏱️ ${v.duration_minutes} mins</span>
+              </div>
+              <h3 style="font-size: 18px; margin-bottom: 4px; color: var(--text-primary);">${v.title}</h3>
+              <p style="font-size: 12.5px; color: var(--text-muted);">
+                ${v.attempt_count || 0} attempts registered · ${v.submitted_count || 0} evaluated
+              </p>
+            </div>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <a href="/teacher/vivas/results?id=${v.id}" class="button button-primary button-compact">📊 Results &amp; CSV</a>
+              <a href="/teacher/vivas/share?id=${v.id}" class="button button-secondary button-compact">🔗 Share / PIN</a>
+              <a href="/teacher/vivas/edit?id=${v.id}" class="button button-quiet button-compact">✏️ Edit</a>
+              <button type="button" class="button button-quiet button-compact" title="Duplicate assessment" onclick="duplicateAssessment(${v.id})">📋 Duplicate</button>
+              <button type="button" class="button button-danger button-compact" title="Delete assessment" onclick="deleteAssessment(${v.id}, '${v.title.replace(/'/g, "\\'")}')">✕ Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterAssessments() {
+      const q = (document.getElementById("assessmentSearchInput").value || "").toLowerCase();
+      const filtered = allAssessments.filter(v => v.title.toLowerCase().includes(q) || v.subject.toLowerCase().includes(q));
+      renderAssessmentList(filtered);
+    }
+
+    window.duplicateAssessment = async function (id) {
+      try {
+        const res = await fetch(`/api/teacher/assessments/${id}/duplicate`, { method: "POST" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Duplicate failed");
+        if (window.Toast) Toast.success("Assessment duplicated as draft!");
+        loadDashboard();
+      } catch (err) {
+        if (window.Toast) Toast.error(err.message);
+      }
+    };
+
+    window.deleteAssessment = async function (id, title) {
+      const confirmed = await Modal.confirm(
+        "Delete Assessment",
+        `Are you sure you want to permanently delete "${title}" and all associated student attempts and question records? This action cannot be undone.`,
+        { confirmText: "Delete Permanently", danger: true }
+      );
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`/api/teacher/assessments/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Delete failed");
+        if (window.Toast) Toast.success("Assessment deleted successfully.");
+        loadDashboard();
+      } catch (err) {
+        if (window.Toast) Toast.error(err.message);
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadTeacherAiSettings();
+      loadDashboard();
+    });
   </script>
 </body>
 </html>

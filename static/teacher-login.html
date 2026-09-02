@@ -1,829 +1,181 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Secure teacher access for viva grading and assessment configuration.">
-  <title>Teacher Access · viva.</title>
+  <meta name="description" content="Secure Professor and Teacher Access for Viva Simulator.">
+  <title>Teacher Access · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <script src="/static/auth.js"></script>
   <style>
-    /* ─── Login Page Layout ─── */
-    .login-page {
+    .auth-page {
       min-height: 100vh;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      position: relative;
-      overflow: hidden;
-      background: var(--canvas);
+      padding: 30px 20px;
     }
 
-    .login-bg {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .login-bg::before {
-      content: "";
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      top: -120px;
-      right: -100px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(19,105,232,0.12) 0%, transparent 70%);
-      animation: float-orb 20s ease-in-out infinite;
-    }
-    .login-bg::after {
-      content: "";
-      position: absolute;
-      width: 500px;
-      height: 500px;
-      bottom: -80px;
-      left: -120px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(112,72,232,0.10) 0%, transparent 70%);
-      animation: float-orb 25s ease-in-out infinite reverse;
-    }
-
-    @keyframes float-orb {
-      0%, 100% { transform: translate(0, 0) scale(1); }
-      25% { transform: translate(30px, -20px) scale(1.05); }
-      50% { transform: translate(-20px, 30px) scale(0.95); }
-      75% { transform: translate(15px, 15px) scale(1.02); }
-    }
-
-    .login-container {
-      position: relative;
-      z-index: 1;
+    .auth-card {
       width: 100%;
-      max-width: 460px;
-      padding: 24px;
-      animation: card-enter 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-
-    @keyframes card-enter {
-      from { opacity: 0; transform: translateY(24px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ─── Login Card ─── */
-    .login-card {
-      padding: 40px 36px 36px;
-      border-radius: 22px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      box-shadow:
-        0 1px 2px rgba(16,24,40,0.04),
-        0 4px 16px rgba(16,24,40,0.06),
-        0 12px 40px rgba(16,24,40,0.04);
-      backdrop-filter: blur(12px);
-    }
-
-    [data-theme="dark"] .login-card {
-      background: rgba(19,28,53,0.85);
-      border-color: rgba(51,65,85,0.5);
-      box-shadow:
-        0 1px 3px rgba(0,0,0,0.3),
-        0 8px 32px rgba(0,0,0,0.4);
+      max-width: 440px;
+      background: var(--surface-acrylic);
       backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 38px 32px 34px;
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
     }
 
-    /* ─── Brand Header ─── */
-    .login-brand {
+    .auth-tabs {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .login-brand-mark {
-      display: inline-flex;
-      align-items: end;
-      gap: 2.5px;
-      width: 28px;
-      height: 28px;
-      padding: 5px;
-      border-radius: 9px;
-      background: var(--blue);
-      animation: pulse-brand 3s ease-in-out infinite;
-    }
-    @keyframes pulse-brand {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(19,105,232,0.3); }
-      50% { box-shadow: 0 0 0 8px rgba(19,105,232,0); }
-    }
-    .login-brand-mark span {
-      display: block;
-      width: 3.5px;
-      border-radius: 2px;
-      background: #fff;
-    }
-    .login-brand-mark span:nth-child(1) { height: 7px; opacity: 0.76; }
-    .login-brand-mark span:nth-child(2) { height: 13px; }
-    .login-brand-mark span:nth-child(3) { height: 18px; opacity: 0.9; }
-    .login-brand-text {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.07em;
-      color: var(--ink);
-    }
-    .login-brand-text .dot { color: var(--blue); }
-
-    .login-subtitle {
-      text-align: center;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.5;
-      margin: 6px 0 28px;
-    }
-
-    /* ─── Mode Tabs ─── */
-    .login-mode-tabs {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
+      background: var(--surface-elevated);
       padding: 4px;
-      margin-bottom: 24px;
-      border-radius: 12px;
-      background: var(--canvas);
-      border: 1px solid var(--line);
-    }
-    .login-mode-tab {
-      padding: 10px 16px;
-      border: none;
-      border-radius: 9px;
-      background: transparent;
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .login-mode-tab:hover:not(.tab-active) {
-      color: var(--ink-soft);
-    }
-    .login-mode-tab.tab-active {
-      background: var(--surface);
-      color: var(--ink);
-      box-shadow: 0 1px 3px rgba(16,24,40,0.06);
-    }
-    [data-theme="dark"] .login-mode-tabs {
-      background: #0b1329;
-      border-color: #1e293b;
-    }
-    [data-theme="dark"] .login-mode-tab.tab-active {
-      background: #1e293b;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      border-radius: var(--radius-md);
+      margin: 24px 0 20px;
+      border: 1px solid var(--border-subtle);
     }
 
-    /* ─── Form Fields ─── */
-    .login-fields {
-      display: grid;
-      gap: 16px;
-    }
-    .field-group {
-      position: relative;
-    }
-    .field-group label {
-      display: block;
-      margin-bottom: 6px;
-      color: var(--ink-soft);
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .field-group label .optional {
-      font-weight: 500;
-      color: var(--muted);
-    }
-    .field-input-wrap {
-      position: relative;
-    }
-    .field-input-wrap input {
-      width: 100%;
-      min-height: 46px;
-      padding: 11px 14px;
-      padding-right: 44px;
-      border: 1px solid var(--line-strong);
-      border-radius: 10px;
-      color: var(--ink);
-      background: var(--surface);
-      font: inherit;
-      font-size: 14px;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .field-input-wrap input:focus {
-      outline: none;
-      border-color: var(--blue);
-      box-shadow: 0 0 0 4px rgba(19,105,232,0.1);
-    }
-    .field-input-wrap input.input-valid {
-      border-color: var(--green);
-    }
-    .field-input-wrap input.input-valid:focus {
-      box-shadow: 0 0 0 4px rgba(14,159,110,0.1);
-    }
-    .field-input-wrap input.input-invalid {
-      border-color: var(--red);
-    }
-    .field-input-wrap input.input-invalid:focus {
-      box-shadow: 0 0 0 4px rgba(217,45,32,0.1);
-    }
-    [data-theme="dark"] .field-input-wrap input {
-      background: #0f172a;
-      border-color: #334155;
-      color: #f1f5f9;
-    }
-
-    .field-icon {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      font-size: 14px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    .field-icon.visible { opacity: 1; }
-    .field-icon.valid { color: var(--green); }
-    .field-icon.invalid { color: var(--red); }
-
-    /* ─── Password Toggle ─── */
-    .password-toggle {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      border: none;
-      border-radius: 8px;
-      background: transparent;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 16px;
-      transition: color 0.2s, background 0.2s;
-      pointer-events: auto;
-    }
-    .password-toggle:hover {
-      color: var(--ink-soft);
-      background: var(--canvas);
-    }
-
-    .field-hint {
-      margin: 5px 0 0;
-      font-size: 11px;
-      color: var(--muted);
-      line-height: 1.4;
-      min-height: 16px;
-    }
-    .field-hint.error { color: var(--red); }
-
-    /* ─── Password Strength ─── */
-    .password-strength {
-      display: flex;
-      gap: 4px;
-      margin-top: 8px;
-      height: 4px;
-    }
-    .strength-bar {
+    .auth-tab-btn {
       flex: 1;
-      border-radius: 99px;
-      background: var(--line);
-      transition: background 0.3s ease;
-    }
-    .strength-bar.filled-weak { background: var(--red); }
-    .strength-bar.filled-medium { background: var(--amber); }
-    .strength-bar.filled-strong { background: var(--green); }
-
-    /* ─── Name field slide ─── */
-    .name-field-wrapper {
-      overflow: hidden;
-      transition: max-height 0.35s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease, margin 0.35s ease;
-      max-height: 0;
-      opacity: 0;
-      margin-top: 0;
-    }
-    .name-field-wrapper.visible {
-      max-height: 100px;
-      opacity: 1;
-      margin-top: 16px;
-    }
-
-    /* ─── Error Banner ─── */
-    .error-banner {
-      display: none;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      margin-top: 16px;
-      border-radius: 10px;
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
-      font-size: 13px;
-      font-weight: 600;
-      line-height: 1.45;
-      animation: shake 0.4s ease;
-    }
-    .error-banner.visible { display: flex; }
-    .error-banner-icon {
-      flex-shrink: 0;
-      font-size: 16px;
-    }
-    [data-theme="dark"] .error-banner {
-      background: rgba(217,45,32,0.1);
-      border-color: rgba(217,45,32,0.25);
-      color: #fca5a5;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      20% { transform: translateX(-6px); }
-      40% { transform: translateX(6px); }
-      60% { transform: translateX(-4px); }
-      80% { transform: translateX(4px); }
-    }
-
-    /* ─── Submit Button ─── */
-    .login-submit {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      width: 100%;
-      min-height: 48px;
-      margin-top: 24px;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 11px;
-      background: var(--blue);
-      color: #fff;
-      font-size: 14px;
-      font-weight: 750;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      position: relative;
-      overflow: hidden;
-    }
-    .login-submit:not(:disabled):hover {
-      background: var(--blue-dark);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 14px rgba(19,105,232,0.25);
-    }
-    .login-submit:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .login-spinner {
-      display: none;
-      width: 18px;
-      height: 18px;
-      border: 2.5px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    .login-submit.loading .login-spinner { display: block; }
-    .login-submit.loading .btn-label { display: none; }
-    .login-submit.loading .btn-loading-text { display: inline; }
-    .btn-loading-text { display: none; }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    /* ─── Success Overlay ─── */
-    .success-overlay {
-      position: fixed;
-      inset: 0;
-      z-index: 100;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,0.92);
-      backdrop-filter: blur(8px);
-    }
-    .success-overlay.visible {
-      display: flex;
-      animation: fade-in 0.3s ease;
-    }
-    [data-theme="dark"] .success-overlay {
-      background: rgba(11,19,41,0.92);
-    }
-    .success-content {
+      padding: 9px;
       text-align: center;
-      animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    .success-check {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 16px;
-      border-radius: 50%;
-      background: var(--green);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 28px;
-      color: #fff;
-      box-shadow: 0 0 0 0 rgba(14,159,110,0.3);
-      animation: check-pulse 0.6s ease 0.2s;
-    }
-    @keyframes check-pulse {
-      0% { box-shadow: 0 0 0 0 rgba(14,159,110,0.4); }
-      100% { box-shadow: 0 0 0 20px rgba(14,159,110,0); }
-    }
-    .success-text {
-      font-size: 18px;
+      font-size: 13px;
       font-weight: 700;
-      color: var(--ink);
-      margin: 0;
-    }
-    .success-sub {
-      font-size: 13px;
-      color: var(--muted);
-      margin: 6px 0 0;
-    }
-
-    @keyframes fade-in {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes pop-in {
-      from { opacity: 0; transform: scale(0.85); }
-      to { opacity: 1; transform: scale(1); }
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
     }
 
-    /* ─── Footer ─── */
-    .login-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 20px;
-      padding-top: 18px;
-      border-top: 1px solid var(--line);
-    }
-    .login-footer a {
-      color: var(--blue);
-      font-size: 13px;
-      font-weight: 650;
-      text-decoration: none;
-    }
-    .login-footer a:hover { color: var(--blue-dark); }
-
-    /* ─── Theme Toggle on Login ─── */
-    .login-theme-toggle {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 10;
-    }
-
-    /* ─── Responsive ─── */
-    @media (max-width: 500px) {
-      .login-container { padding: 16px; }
-      .login-card { padding: 28px 22px 24px; border-radius: 18px; }
-      .login-brand-text { font-size: 22px; }
-      .login-theme-toggle { top: 12px; right: 12px; }
+    .auth-tab-btn.active {
+      color: #ffffff;
+      background: var(--primary);
+      box-shadow: 0 2px 10px var(--primary-glow);
     }
   </style>
 </head>
-<body>
-  <!-- Background decoration -->
-  <div class="login-bg" aria-hidden="true"></div>
-
-  <!-- Theme toggle -->
-  <div class="login-theme-toggle">
-    <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">🌙 <span class="theme-btn-text">Dark</span></button>
+<body class="auth-page">
+  <div style="margin-bottom: 24px; text-align: center;">
+    <a href="/" class="brand" aria-label="Viva Simulator Home" style="font-size: 26px;">
+      <span class="brand-mark" style="width: 32px; height: 32px;" aria-hidden="true"><span></span></span>
+      <span>viva<span class="brand-dot">-simulator</span></span>
+    </a>
   </div>
 
-  <!-- Success Overlay -->
-  <div class="success-overlay" id="successOverlay">
-    <div class="success-content">
-      <div class="success-check">✓</div>
-      <p class="success-text" id="successText">Welcome back!</p>
-      <p class="success-sub">Redirecting to your dashboard…</p>
+  <div class="auth-card">
+    <div style="text-align: center;">
+      <span class="eyebrow">Instructor Portal</span>
+      <h1 id="authTitle" style="font-size: 24px; margin-top: 4px;">Sign In to Workspace</h1>
+      <p id="authSubtitle" style="font-size: 13.5px; color: var(--text-muted); margin-top: 4px;">
+        Manage oral assessments, question banks, and grading rubrics.
+      </p>
     </div>
-  </div>
 
-  <div class="login-page">
-    <div class="login-container">
-      <div class="login-card">
-        <!-- Brand -->
-        <div class="login-brand">
-          <span class="login-brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-          <span class="login-brand-text">viva<span class="dot">.</span></span>
-        </div>
-        <p class="login-subtitle">Teacher Portal — Sign in to manage your assessments</p>
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab-btn active" id="tabLogin" onclick="switchAuthMode('login')">Sign In</button>
+      <button type="button" class="auth-tab-btn" id="tabRegister" onclick="switchAuthMode('register')">Create Account</button>
+    </div>
 
-        <!-- Mode Tabs -->
-        <div class="login-mode-tabs" role="tablist">
-          <button type="button" class="login-mode-tab tab-active" role="tab" id="tabSignIn" aria-selected="true" onclick="setMode('signin')">Sign In</button>
-          <button type="button" class="login-mode-tab" role="tab" id="tabSignUp" aria-selected="false" onclick="setMode('signup')">Create Account</button>
-        </div>
-
-        <!-- Form -->
-        <form id="authForm" autocomplete="on" novalidate>
-          <div class="login-fields">
-            <!-- Email -->
-            <div class="field-group">
-              <label for="teacherEmail">Email Address</label>
-              <div class="field-input-wrap">
-                <input id="teacherEmail" type="email" placeholder="you@school.edu" required autocomplete="email" spellcheck="false">
-                <span class="field-icon" id="emailIcon" aria-hidden="true"></span>
-              </div>
-              <p class="field-hint" id="emailHint"></p>
-            </div>
-
-            <!-- Password -->
-            <div class="field-group">
-              <label for="teacherPassword">Password</label>
-              <div class="field-input-wrap">
-                <input id="teacherPassword" type="password" placeholder="••••••••" required autocomplete="current-password" minlength="6">
-                <button type="button" class="password-toggle" id="passToggle" onclick="togglePassword()" aria-label="Show password" tabindex="-1">👁</button>
-              </div>
-              <div class="password-strength" id="passwordStrength" style="display: none;">
-                <div class="strength-bar" id="str1"></div>
-                <div class="strength-bar" id="str2"></div>
-                <div class="strength-bar" id="str3"></div>
-                <div class="strength-bar" id="str4"></div>
-              </div>
-              <p class="field-hint" id="passHint"></p>
-            </div>
-
-            <!-- Display Name (signup mode only) -->
-            <div class="name-field-wrapper" id="nameWrapper">
-              <div class="field-group">
-                <label for="teacherName">Display Name <span class="optional">(shown on reports)</span></label>
-                <div class="field-input-wrap">
-                  <input id="teacherName" type="text" placeholder="e.g. Professor Smith" autocomplete="name">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Error Banner -->
-          <div class="error-banner" id="errorBanner" role="alert">
-            <span class="error-banner-icon" aria-hidden="true">⚠️</span>
-            <span id="errorText"></span>
-          </div>
-
-          <!-- Submit -->
-          <button type="submit" id="submitBtn" class="login-submit">
-            <span class="login-spinner" aria-hidden="true"></span>
-            <span class="btn-label" id="btnLabel">Sign In <span aria-hidden="true">→</span></span>
-            <span class="btn-loading-text" id="btnLoadingText">Signing in…</span>
-          </button>
-        </form>
-
-        <!-- Footer -->
-        <div class="login-footer">
-          <a href="/" aria-label="Back to home">← Back to Home</a>
-          <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="min-height:34px; padding:5px 12px; font-size:12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-        </div>
+    <form id="authForm" onsubmit="handleAuthSubmit(event)">
+      <div id="registerFields" style="display: none; margin-bottom: 14px;">
+        <label for="displayName">Full Name / Academic Title</label>
+        <input type="text" id="displayName" placeholder="e.g. Prof. Alan Turing">
       </div>
-    </div>
+
+      <div style="margin-bottom: 14px;">
+        <label for="email">Institutional Email</label>
+        <input type="email" id="email" placeholder="teacher@university.edu" required>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+          <label for="password" style="margin-bottom: 0;">Password</label>
+          <span style="font-size: 11.5px; color: var(--text-muted); cursor: pointer;" onclick="togglePasswordVisibility()">Show</span>
+        </div>
+        <input type="password" id="password" placeholder="••••••••" required minlength="6">
+      </div>
+
+      <button type="submit" id="authSubmitBtn" class="button button-primary" style="width: 100%;">
+        Sign In →
+      </button>
+
+      <div id="authErrorMessage" style="margin-top: 14px; color: var(--danger); font-size: 12.5px; font-weight: 600; text-align: center;"></div>
+    </form>
+  </div>
+
+  <div style="margin-top: 24px; display: flex; align-items: center; gap: 16px;">
+    <a href="/" style="font-size: 13px; color: var(--text-muted);">← Back to Gateway</a>
+    <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
   </div>
 
   <script>
-    // ─── DOM refs ───
-    const emailInput = document.getElementById("teacherEmail");
-    const passwordInput = document.getElementById("teacherPassword");
-    const nameInput = document.getElementById("teacherName");
-    const nameWrapper = document.getElementById("nameWrapper");
-    const submitBtn = document.getElementById("submitBtn");
-    const btnLabel = document.getElementById("btnLabel");
-    const btnLoadingText = document.getElementById("btnLoadingText");
-    const authForm = document.getElementById("authForm");
-    const errorBanner = document.getElementById("errorBanner");
-    const errorText = document.getElementById("errorText");
-    const emailIcon = document.getElementById("emailIcon");
-    const emailHint = document.getElementById("emailHint");
-    const passHint = document.getElementById("passHint");
-    const passToggle = document.getElementById("passToggle");
-    const passwordStrength = document.getElementById("passwordStrength");
-    const tabSignIn = document.getElementById("tabSignIn");
-    const tabSignUp = document.getElementById("tabSignUp");
-    const successOverlay = document.getElementById("successOverlay");
-    const successText = document.getElementById("successText");
+    let authMode = "login";
 
-    let mode = "signin"; // "signin" or "signup"
-
-    // ─── Mode switching ───
-    function setMode(newMode) {
-      mode = newMode;
-      if (mode === "signup") {
-        tabSignUp.classList.add("tab-active");
-        tabSignUp.setAttribute("aria-selected", "true");
-        tabSignIn.classList.remove("tab-active");
-        tabSignIn.setAttribute("aria-selected", "false");
-        nameWrapper.classList.add("visible");
-        passwordInput.setAttribute("autocomplete", "new-password");
-        btnLabel.innerHTML = 'Create Account <span aria-hidden="true">→</span>';
-        btnLoadingText.textContent = "Creating account…";
-        passwordStrength.style.display = "flex";
-      } else {
-        tabSignIn.classList.add("tab-active");
-        tabSignIn.setAttribute("aria-selected", "true");
-        tabSignUp.classList.remove("tab-active");
-        tabSignUp.setAttribute("aria-selected", "false");
-        nameWrapper.classList.remove("visible");
-        passwordInput.setAttribute("autocomplete", "current-password");
-        btnLabel.innerHTML = 'Sign In <span aria-hidden="true">→</span>';
-        btnLoadingText.textContent = "Signing in…";
-        passwordStrength.style.display = "none";
-      }
-      hideError();
+    function switchAuthMode(mode) {
+      authMode = mode;
+      document.getElementById("tabLogin").classList.toggle("active", mode === "login");
+      document.getElementById("tabRegister").classList.toggle("active", mode === "register");
+      document.getElementById("registerFields").style.display = mode === "register" ? "block" : "none";
+      document.getElementById("authTitle").textContent = mode === "register" ? "Create Teacher Account" : "Sign In to Workspace";
+      document.getElementById("authSubtitle").textContent = mode === "register" ? "Set up your instructor workspace for assessments." : "Manage oral assessments, question banks, and grading rubrics.";
+      document.getElementById("authSubmitBtn").textContent = mode === "register" ? "Create Account →" : "Sign In →";
+      document.getElementById("authErrorMessage").textContent = "";
     }
 
-    // ─── Password visibility toggle ───
-    function togglePassword() {
-      const isPassword = passwordInput.type === "password";
-      passwordInput.type = isPassword ? "text" : "password";
-      passToggle.textContent = isPassword ? "🙈" : "👁";
-      passToggle.setAttribute("aria-label", isPassword ? "Hide password" : "Show password");
+    function togglePasswordVisibility() {
+      const pass = document.getElementById("password");
+      pass.type = pass.type === "password" ? "text" : "password";
     }
 
-    // ─── Validation ───
-    function isValidEmail(email) {
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-    }
-
-    function getPasswordStrength(password) {
-      let score = 0;
-      if (password.length >= 6) score++;
-      if (password.length >= 8) score++;
-      if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
-      if (/\d/.test(password) || /[^A-Za-z0-9]/.test(password)) score++;
-      return score;
-    }
-
-    function updatePasswordStrength() {
-      const pw = passwordInput.value;
-      const bars = [
-        document.getElementById("str1"),
-        document.getElementById("str2"),
-        document.getElementById("str3"),
-        document.getElementById("str4"),
-      ];
-      const score = getPasswordStrength(pw);
-      const classes = ["", "filled-weak", "filled-medium", "filled-medium", "filled-strong"];
-      bars.forEach((bar, i) => {
-        bar.className = "strength-bar";
-        if (i < score) bar.classList.add(classes[score]);
-      });
-    }
-
-    emailInput.addEventListener("blur", () => {
-      const email = emailInput.value.trim();
-      if (!email) {
-        emailIcon.className = "field-icon";
-        emailInput.classList.remove("input-valid", "input-invalid");
-        emailHint.textContent = "";
-        return;
-      }
-      if (isValidEmail(email)) {
-        emailInput.classList.remove("input-invalid");
-        emailInput.classList.add("input-valid");
-        emailIcon.className = "field-icon visible valid";
-        emailIcon.textContent = "✓";
-        emailHint.textContent = "";
-        emailHint.classList.remove("error");
-      } else {
-        emailInput.classList.remove("input-valid");
-        emailInput.classList.add("input-invalid");
-        emailIcon.className = "field-icon visible invalid";
-        emailIcon.textContent = "✕";
-        emailHint.textContent = "Please enter a valid email address";
-        emailHint.classList.add("error");
-      }
-    });
-
-    passwordInput.addEventListener("input", () => {
-      if (mode === "signup") updatePasswordStrength();
-      const pw = passwordInput.value;
-      if (pw.length > 0 && pw.length < 6) {
-        passHint.textContent = `${6 - pw.length} more character${6 - pw.length !== 1 ? "s" : ""} needed`;
-        passHint.classList.add("error");
-      } else {
-        passHint.textContent = "";
-        passHint.classList.remove("error");
-      }
-    });
-
-    // ─── Error display ───
-    function showError(msg) {
-      errorText.textContent = msg;
-      errorBanner.classList.add("visible");
-      // Re-trigger shake animation
-      errorBanner.style.animation = "none";
-      errorBanner.offsetHeight; // Force reflow
-      errorBanner.style.animation = "";
-    }
-
-    function hideError() {
-      errorBanner.classList.remove("visible");
-      errorText.textContent = "";
-    }
-
-    // ─── Success animation ───
-    function showSuccess(name) {
-      successText.textContent = mode === "signup"
-        ? `Welcome, ${name || "Teacher"}!`
-        : "Welcome back!";
-      successOverlay.classList.add("visible");
-    }
-
-    function getRedirectUrl() {
-      const params = new URLSearchParams(window.location.search);
-      const target = params.get("redirect") || params.get("next");
-      if (target && target.startsWith("/") && !target.startsWith("//")) {
-        return target;
-      }
-      return "/teacher";
-    }
-
-    // ─── Check if already logged in ───
-    async function checkAuthStatus() {
-      await Auth.check();
-    }
-
-    // ─── Form submit ───
-    authForm.addEventListener("submit", async (e) => {
+    async function handleAuthSubmit(e) {
       e.preventDefault();
-      hideError();
+      const errEl = document.getElementById("authErrorMessage");
+      const btn = document.getElementById("authSubmitBtn");
+      errEl.textContent = "";
 
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
-      const displayName = nameInput.value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password");
+      const displayName = document.getElementById("displayName").value.trim();
 
-      // Client-side validation
-      if (!email || !isValidEmail(email)) {
-        showError("Please enter a valid email address.");
-        emailInput.focus();
-        return;
-      }
-      if (password.length < 6) {
-        showError("Password must be at least 6 characters.");
-        passwordInput.focus();
-        return;
-      }
-      if (mode === "signup" && !displayName) {
-        showError("Please enter your display name.");
-        nameInput.focus();
-        return;
-      }
-
-      // Set loading state
-      submitBtn.disabled = true;
-      submitBtn.classList.add("loading");
-
-      const payload = {
-        email: email,
-        password: password,
-        display_name: displayName || undefined,
-      };
+      btn.disabled = true;
+      btn.textContent = "Authenticating...";
 
       try {
         const res = await fetch("/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            email: email,
+            password: password.value,
+            display_name: displayName
+          })
         });
+
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Authentication failed.");
+        if (!res.ok) {
+          throw new Error(data.error || "Authentication failed.");
+        }
 
-        // Success!
-        const teacherName = data.teacher?.display_name || displayName || email.split("@")[0];
-        showSuccess(teacherName);
-
-        // Brief pause for the animation, then redirect
+        if (window.Toast) Toast.success("Authenticated successfully! Redirecting...");
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("redirect") || "/teacher";
         setTimeout(() => {
-          window.location.href = getRedirectUrl();
-        }, 900);
+          window.location.href = next;
+        }, 400);
       } catch (err) {
-        showError(err.message);
-        submitBtn.disabled = false;
-        submitBtn.classList.remove("loading");
+        errEl.textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = authMode === "register" ? "Create Account →" : "Sign In →";
+        if (window.Toast) Toast.error(err.message);
       }
-    });
-
-    // ─── Init ───
-    checkAuthStatus();
+    }
   </script>
 </body>
 </html>

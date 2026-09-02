@@ -1,83 +1,52 @@
-# Viva Notes
+# Viva AI — Project Notes & Viva Defense Guide
 
-## Project Name
+## Project Title
+**Viva AI — Intelligent Oral Examination & Academic Assessment Suite**
 
-AI Viva Simulator
+---
 
 ## Problem Statement
+Traditional viva and oral defense preparation lacks objective, real-time feedback. Students struggle to assess whether their spoken technical explanations are precise, structured, and comprehensive. Viva AI addresses this by providing an interactive oral examination simulator with transparent 4-dimension rubric scoring, AI-driven question generation from lecture notes, voice speech-to-text dictation, and an end-to-end teacher assessment suite.
 
-Students often prepare answers but do not know whether their explanation is clear enough for a viva. This project solves that by simulating an interview and giving instant feedback.
+---
 
-## Objective
+## Core System Architecture
 
-To build a hybrid AI assessment system that asks viva questions, evaluates answers, and generates a readiness report.
+1. **Python Server & WSGI Adapter**:
+   - Zero framework overhead — built using the Python standard library.
+   - Dual-runtime: Standalone multi-threaded `ThreadingHTTPServer` locally, WSGI adapter for Vercel serverless.
 
-## Main Modules
+2. **Document Ingestion Engine**:
+   - Parses PDF (`pypdf`), DOCX (`zipfile`/XML), Markdown, TXT, and CSV lecture notes in-memory.
+   - Dynamically feeds context to the AI generation pipeline.
 
-1. Python Web Server
-   - Serves the UI.
-   - Handles API requests.
-   - Evaluates answers and generates reports.
+3. **Multi-Model AI Scoring Core**:
+   - Direct integration with OpenAI (`gpt-4o-mini`), Google Gemini (`gemini-1.5-flash`), and local LLMs (`Ollama`/`LM Studio`).
+   - Strict 4-point rubric: Concept Precision (20%), Explanation Clarity (20%), Evidence/Examples (20%), Keyword Coverage (40%).
+   - Non-answer heuristics to filter blank/evasive answers without incurring API latency.
 
-2. Question Bank
-   - Stores subject-wise questions in JSON.
-   - Includes expected keywords and model answers.
-   - Supports custom subjects through generated fallback questions.
+4. **Obsidian Aurora Design System & Oral Voice HUD**:
+   - Custom design system created with Stitch MCP (`Plus Jakarta Sans`, `Inter`, `JetBrains Mono`).
+   - Web Speech API integration for spoken oral responses.
+   - Pomodoro Focus Suite with Web Audio API chime synthesis.
 
-3. AI Evaluator Module
-   - Uses AI models (OpenAI, Gemini, or Local LLM via Ollama/LM Studio) to evaluate answer technical accuracy, clarity, and keyword coverage.
-   - Adjusts scoring and feedback strictness based on Easy, Medium, and Hard mode settings.
+---
 
-4. Professor Mode Report
-   - Shows average score, readiness, weak topics, and evaluation summary.
+## Teacher Assessment & Classroom Management
+- **Custom Assessment Builder**: Set duration, fixed/student-choice questions, and randomized pools.
+- **PIN Access & Auto-Expiry**: Protect exam access with hashed PINs and time-based expiration.
+- **Parallel Asynchronous Grading**: Batch evaluates student exam attempts concurrently via `concurrent.futures.ThreadPoolExecutor`.
+- **Grade Inspection & Override**: Audit AI scoring with manual teacher mark adjustments and mandatory reasons.
 
-## Why It Is AI-Oriented
+---
 
-The project relies on AI model evaluation for semantic scoring, detailed feedback generation, confidence estimation, and weak-topic detection across student responses.
+## Common Viva Defense Questions & Answers
 
-## New Advanced Features
+### Q: Why did you avoid heavy frameworks like Flask or FastAPI?
+**A**: Viva AI utilizes Python's built-in `http.server` and standard library modules to eliminate external web framework dependencies, minimize cold-start latencies, and allow plug-and-play local execution while retaining full WSGI compatibility for cloud serverless deployments.
 
-- User can add any custom subject for viva practice.
-- User can configure Cloud API keys or Local LLM endpoints directly in the browser.
-- Easy, Medium, and Hard levels change how strict the scoring and feedback are.
-- Feedback is polite but direct, so the student knows exactly what to improve.
+### Q: How does the system evaluate spoken oral answers?
+**A**: The platform utilizes the browser's native **Web Speech API** for real-time speech recognition, transcribing verbal responses into structured text which is evaluated against technical rubrics and keyword coverage by the AI model.
 
-## Important Concepts Used
-
-- Python HTTP server
-- REST-style API routes
-- JSON data handling
-- DOM manipulation
-- Fetch API
-- AI Model Prompt Engineering & Structured Evaluation
-- Client-server architecture
-
-## Possible Teacher Questions
-
-### Why did you avoid Flask?
-
-The project uses only the Python standard library to make setup easier and avoid dependency problems during demo.
-
-### Is this real AI?
-
-Yes. Evaluation and question generation are powered by AI models (OpenAI, Gemini, or local models via Ollama/LM Studio).
-
-### How is the score calculated?
-
-The score is evaluated by the AI model based on concept precision (20%), explanation clarity (20%), evidence/examples (20%), and keyword coverage (40%).
-
-### How does difficulty affect feedback?
-
-Easy mode expects basic definition and example. Medium mode expects clear explanation. Hard mode expects deeper reasoning, tradeoffs, limitations, or edge cases.
-
-### Why is this useful?
-
-It helps students practice viva answers, identify weak areas, and improve before real evaluation.
-
-## Future Improvements
-
-- Voice input and spoken feedback.
-- PDF report export.
-- Teacher dashboard.
-- Custom question upload.
-- Follow-up questions generated by AI.
+### Q: How are teacher credentials and student attempts secured?
+**A**: Passwords use **PBKDF2-HMAC-SHA256** with 210,000 iterations and random salts. Sessions use **HMAC-SHA256 signed tokens** in `HttpOnly` cookies, with IP-based rate limiting to prevent brute-force attacks.

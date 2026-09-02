@@ -1,102 +1,66 @@
-# AI Viva Simulator
+# Viva Simulator (viva-simulator)
+### Intelligent AI Oral Examination & Defense Platform
 
-AI Viva Simulator is a Python + Web UI mini project designed for a modern 2026 classroom demo. It simulates a professor-style viva interview, evaluates student answers, gives AI-style feedback, and generates a final readiness report.
+Viva Simulator is a modern, lightweight, full-stack academic platform for technical oral viva examinations, thesis defenses, syllabus material ingestion, examiner voice synthesis, and multi-dimensional rubric evaluation.
 
-## Why This Project Is Different
+---
 
-This is not a simple school planner or CRUD app. It behaves like a hybrid AI assessment system:
+## ⚡ Key Highlights & Features
 
-- Interactive viva/interview simulation.
-- Real AI model scoring engine (Cloud API or Local LLM).
-- OpenAI / Gemini / Ollama / LM Studio integration.
-- Strengths, gaps, model answer, confidence, and readiness level.
-- Professor Mode final report.
+- **Local Ollama & Cloud AI Routing**: Native zero-dependency connection to local Ollama (`qwen2.5-coder:3b`, `llama3`, `deepseek-r1`, etc.) at `http://localhost:11434` or cloud providers (OpenAI `gpt-4o-mini`, Google Gemini `gemini-1.5-flash`). Includes a **"Test Connection ⚡"** pre-flight probe.
+- **Dual Voice Interaction**:
+  - **🔊 AI Oral Examiner Voice Read-Aloud (TTS)**: Web Speech Synthesis for realistic oral viva questioning.
+  - **🎙️ Speech-to-Text Voice Dictation (STT)**: Hands-free verbal answering with live word counting.
+- **4-Dimension Rubric Assessment Visualizer**:
+  1. **Concept Precision (20%)**
+  2. **Explanation Clarity (20%)**
+  3. **Evidence & Concrete Examples (20%)**
+  4. **Keyword & Terminology Coverage (40%)**
+- **Document & Syllabus Ingestion**: Ingest PDF (`pypdf` + raw stream fallback), DOCX, TXT, Markdown, CSV, and code files to generate relevant oral viva question sets.
+- **Personal Study Vault & Revision Export**: Private note-taking HUD on every question, star bookmarks, and one-click **"Export Study Guide (.md)"** report generator.
+- **Productivity & Focus Suite**: Pomodoro timer with Web Audio synthesized focus ambiance (Rain, Deep Brown Noise, Gentle White Noise) and live weather pill.
+- **Instructor Command Center**:
+  - Author timed viva assessments with custom question ordering and question banks.
+  - Set PIN security codes and auto-expiration timestamps.
+  - Duplicate/clone assessments and delete assessments.
+  - Inspect student oral recordings and evaluations with **Manual Mark Overrides & Audit Logs**.
+  - **Export Gradebook to CSV** with one click.
+- **Non-Blocking Glassmorphic UI**: Obsidian Aurora 2.0 theme with light/dark toggle, unified toast notifications (`Toast.success`, `Toast.error`), and accessible confirmation modals.
 
-## Features
+---
 
-- Choose subject and level.
-- Add your own subject from the browser.
-- Choose Easy, Medium, or Hard difficulty.
-- Configure Cloud API Key or Local AI model (Ollama / LM Studio) in the UI or environment.
-- Answer viva questions one by one.
-- Get difficulty-aware score, confidence, feedback, strengths, gaps, and model answer.
-- Generate a final report with average score, readiness, and weak topics.
-- Uses a transparent rubric: keyword coverage, clarity, examples, and concept precision.
-- AI evaluation mode: powered by OpenAI, Gemini, or local models.
+## 🚀 Quickstart
 
-## Technologies Used
+### 1. Requirements
+- Python 3.10+
+- Optional: `pypdf` (for PDF document ingestion)
 
-- Python standard library only.
-- HTML, CSS, and JavaScript.
-- JSON question bank.
-- AI model integration (OpenAI, Gemini, Ollama, LM Studio).
+```bash
+pip install pypdf
+```
 
-## How To Run
+### 2. Launch Local AI with Ollama (Optional)
+If running local models without API keys:
+```bash
+ollama run qwen2.5-coder:3b
+```
 
-```powershell
+### 3. Start the Server
+```bash
 python server.py
 ```
+Open **`http://localhost:8000`** in your browser.
 
-Open:
+Default Teacher Login:
+- **Email:** `teacher@example.com`
+- **Password:** `password`
 
-```text
-http://localhost:8000
+---
+
+## 🧪 Automated Testing
+
+Run the automated unit and end-to-end integration test suite:
+```bash
+python test_server.py
 ```
-
-If Python is blocked on Windows, repair it with one of these options:
-
-1. Install Python from https://www.python.org/downloads/ and enable **Add Python to PATH**.
-2. Or open Windows Settings, search **App execution aliases**, and turn off the Microsoft Store Python aliases.
-3. Restart PowerShell and run `python --version`.
-
-## AI Model Setup
-
-To enable AI evaluation, either paste your API key / model base URL in the web UI settings or set environment variables in PowerShell:
-
-```powershell
-$env:OPENAI_API_KEY="your_api_key_here"
-$env:OPENAI_MODEL="gpt-4o-mini"
-python server.py
-```
-
-The in-page API key is not saved to server disk. It is sent only with the evaluation requests.
-
-## API Routes
-
-- `GET /` opens the web app.
-- `GET /api/questions?subject=Python&level=medium` returns viva questions.
-- `POST /api/generate-questions` generates questions for built-in or custom subjects.
-- `POST /api/evaluate` evaluates one answer.
-- `POST /api/report` creates the final professor report.
-
-## AI Rubric Evaluation
-
-- Keyword coverage: 40%.
-- Explanation clarity and answer length: 20%.
-- Example/code mention: 20%.
-- Concept precision: 20%.
-
-Readiness labels:
-
-- Needs Practice
-- Developing
-- Good
-- Excellent
-
-Difficulty changes the expectation:
-
-- Easy mode accepts shorter beginner-friendly answers.
-- Medium mode expects clear explanation and example.
-- Hard mode expects deeper reasoning, tradeoffs, limitations, or edge cases.
-
-## Future Scope
-
-- Voice-based viva using speech recognition.
-- Face confidence detection using webcam.
-- PDF export for report.
-- Admin panel for adding custom questions.
-- Real AI conversation mode with follow-up questions and adaptive difficulty.
-
-## Conclusion
-
-This project demonstrates an AI-era educational assessment tool using simple, explainable technology. It is suitable for a professor demo because it combines backend APIs, frontend UI, scoring logic, analytics, and optional real AI integration.
+All 11 test modules verify authentication, password hashing, document parsing, Ollama endpoint normalization, rubric evaluation, public exam lifecycles, and teacher mark overrides.

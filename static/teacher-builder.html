@@ -1,244 +1,227 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Build or edit a structured classroom viva assessment.">
-  <title>Assessment Builder · viva.</title>
+  <meta name="description" content="Assessment Builder — Author viva questions with AI auto-generation, custom rubrics, and grading settings.">
+  <title>Assessment Builder · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <script src="/static/auth.js"></script>
   <style>
     .builder-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
+      grid-template-columns: 440px 1fr;
+      gap: 24px;
       margin-top: 24px;
     }
-    .question-row {
-      border: 1px solid var(--line);
-      background: var(--canvas);
-      padding: 16px;
-      border-radius: 10px;
-      margin-bottom: 12px;
+
+    .question-item-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-bottom: 14px;
       position: relative;
     }
-    .delete-question-btn {
+
+    .q-card-actions {
       position: absolute;
-      top: 16px;
-      right: 16px;
-      color: var(--red);
-      background: transparent;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .bulk-area {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-    }
-    .bulk-area textarea {
-      min-height: 100px;
-      font-size: 13px;
-    }
-    .builder-actions {
+      top: 14px;
+      right: 14px;
       display: flex;
-      justify-content: flex-end;
-      gap: 12px;
-      margin-top: 32px;
-      border-top: 1px solid var(--line);
-      padding-top: 20px;
+      align-items: center;
+      gap: 6px;
     }
-    @media (max-width: 900px) {
-      .builder-grid {
-        grid-template-columns: 1fr;
-      }
+
+    .q-btn-icon {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+
+    .q-btn-icon:hover {
+      color: var(--text-primary);
+      border-color: var(--primary);
+    }
+
+    .ai-gen-box {
+      background: var(--surface-acrylic);
+      border: 1px solid var(--border-active);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin-bottom: 18px;
+    }
+
+    @media (max-width: 980px) {
+      .builder-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
       </a>
-      <span class="back-link" id="teacherDisplay">Teacher Session</span>
-      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-      <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;">Back to Dashboard</a>
+      <div class="topbar-actions">
+        <span class="badge badge-primary" id="teacherDisplay">Teacher Session</span>
+        <a href="/teacher" class="button button-quiet button-compact">Dashboard</a>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
+      </div>
     </header>
 
-    <div style="margin-top: 24px;">
-      <p class="eyebrow" id="builderActionLabel">Viva Authoring Workflow</p>
-      <h1 id="builderTitle" style="margin: 6px 0 0; font-size: 32px; font-weight: 900; letter-spacing: -0.04em;">Create Assessment</h1>
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+      <div>
+        <p class="eyebrow" id="builderActionLabel">Viva Authoring Workflow</p>
+        <h1 id="builderTitle">Create Oral Assessment</h1>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="/teacher" class="button button-quiet">Cancel</a>
+        <button type="button" id="saveVivaBtn" class="button button-primary">Save Assessment 💾</button>
+      </div>
     </div>
 
     <form id="builderForm">
       <div class="builder-grid">
-        <!-- Left Panel: General Configurations -->
+        <!-- Left Column: Settings & Rules -->
         <section class="panel">
           <div class="panel-heading">
             <span class="step-label">01</span>
             <div>
-              <p class="eyebrow">Viva Parameters</p>
-              <h2>Settings & Instructions</h2>
+              <p class="eyebrow">Parameters</p>
+              <h2>Settings &amp; Rules</h2>
             </div>
           </div>
 
-          <div style="display: grid; gap: 14px; margin-top: 14px;">
-            <label>
-              Viva Assessment Title
-              <input id="vivaTitle" type="text" placeholder="e.g. Midterm Python Programming Viva" required>
-            </label>
-
-            <div class="field-row">
-              <label>
-                Subject Name
-                <input id="vivaSubject" type="text" placeholder="e.g. Python" required>
-              </label>
-              <label>
-                Duration (minutes)
-                <input id="vivaDuration" type="number" min="1" max="300" value="20" required>
-              </label>
-            </div>
-
-            <label>
-              Student Instructions / Syllabus guidelines
-              <textarea id="vivaInstructions" placeholder="Write exam guidelines, instructions, topics covered, or rules here..."></textarea>
-            </label>
-
-            <div class="field-row">
-              <label>
-                Question Ordering
-                <select id="vivaOrdering">
-                  <option value="fixed" selected>Fixed (Original Position Order)</option>
-                  <option value="shuffled">Shuffled (Randomize order per student)</option>
-                  <option value="random">Random Pool (Sample subset from pool)</option>
-                </select>
-              </label>
-              <label>
-                Question count mode
-                <select id="vivaCountMode">
-                  <option value="fixed" selected>Fixed Count (Default)</option>
-                  <option value="student_select">Student Range Selection</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="field-row" id="questionCountRangeWrapper">
-              <label>
-                Minimum Questions
-                <input id="vivaCountMin" type="number" min="1" max="100" value="5">
-              </label>
-              <label id="countMaxLabel">
-                Maximum Questions
-                <input id="vivaCountMax" type="number" min="1" max="100" value="5">
-              </label>
-            </div>
-
-            <!-- Student intake fields checklist -->
-            <div style="margin-top: 10px;">
-              <span style="font-size:12px; font-weight:700; color:var(--ink-soft); display:block; margin-bottom:8px;">Mandatory Student Intake Fields</span>
-              <div style="display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px;">
-                <label class="toggle-row" style="cursor: default;"><input type="checkbox" checked disabled> <span>Full Name</span></label>
-                <label class="toggle-row" style="cursor: default;"><input type="checkbox" checked disabled> <span>Roll Number</span></label>
-                <label class="toggle-row"><input type="checkbox" id="fieldClass" checked> <span>Class / Year</span></label>
-                <label class="toggle-row"><input type="checkbox" id="fieldSection" checked> <span>Section</span></label>
-                <label class="toggle-row"><input type="checkbox" id="fieldEmail"> <span>Email Address</span></label>
-              </div>
-            </div>
-
-            <label class="toggle-row" style="margin-top: 8px;">
-              <input type="checkbox" id="vivaShowResults" checked>
-              <span>Release marks and AI feedback to students immediately upon submission</span>
-            </label>
-          </div>
-        </section>
-
-        <!-- Right Panel: Questions Workspace -->
-        <section class="panel">
-          <div class="panel-heading" style="margin-bottom:14px;">
-            <span class="step-label">02</span>
+          <div style="display: grid; gap: 14px;">
             <div>
-              <p class="eyebrow">Questions List</p>
-              <h2>Assessment Items</h2>
+              <label for="vivaTitle">Assessment Title</label>
+              <input type="text" id="vivaTitle" placeholder="e.g. Midterm Operating Systems Viva" required>
             </div>
-          </div>
 
-          <!-- AI Draft Question Generator -->
-          <details class="ai-settings" style="margin-bottom: 20px;">
-            <summary style="color: var(--violet);"><span class="settings-icon" style="color:var(--violet);">✦</span> AI Draft Generator <span class="summary-helper" style="color: #9f88ec;">Auto-generate drafts</span></summary>
-            <div class="ai-settings-content">
-              <p style="color: #7b62cc;">Upload reference notes or a curriculum file to let OpenAI generate draft questions.</p>
-              <label>
-                Choose Reference File
-                <input type="file" id="aiDraftFile" accept=".pdf,.docx,.txt,.md">
+            <div class="field-row">
+              <div>
+                <label for="vivaSubject">Subject Name</label>
+                <input type="text" id="vivaSubject" placeholder="e.g. Computer Science" required>
+              </div>
+              <div>
+                <label for="vivaDuration">Duration (Mins)</label>
+                <input type="number" id="vivaDuration" min="1" max="300" value="20" required>
+              </div>
+            </div>
+
+            <div>
+              <label for="vivaInstructions">Student Instructions &amp; Guidelines</label>
+              <textarea id="vivaInstructions" placeholder="Enter instructions, syllabus topics covered, or scoring guidelines..."></textarea>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <label for="vivaOrdering">Question Ordering</label>
+                <select id="vivaOrdering">
+                  <option value="fixed" selected>Fixed Order (Default)</option>
+                  <option value="shuffled">Shuffled per Student</option>
+                  <option value="random">Random Subset Pool</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="vivaCountMode">Question Count Mode</label>
+                <select id="vivaCountMode">
+                  <option value="fixed" selected>Fixed Count</option>
+                  <option value="student_select">Student Choice Range</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field-row" id="countRangeRow">
+              <div>
+                <label for="vivaCountMin">Minimum Questions</label>
+                <input type="number" id="vivaCountMin" min="1" max="100" value="5">
+              </div>
+              <div>
+                <label for="vivaCountMax">Maximum Questions</label>
+                <input type="number" id="vivaCountMax" min="1" max="100" value="5">
+              </div>
+            </div>
+
+            <!-- AI Automated Grading Permission Toggle -->
+            <div style="padding: 12px; background: var(--surface-elevated); border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <label class="toggle-row" style="margin: 0;">
+                <input type="checkbox" id="vivaAiGrading" checked>
+                <span><strong>Enable AI Automated Grading for Student Submissions</strong></span>
               </label>
-              <div class="field-row">
-                <label>
-                  Difficulty Level
-                  <select id="aiDraftLevel">
-                    <option value="easy">Easy</option>
-                    <option value="medium" selected>Medium</option>
-                    <option value="hard">Hard</option>
-                  </select>
-                </label>
-                <label>
-                  Question Count
-                  <input id="aiDraftCount" type="number" min="1" max="30" value="5">
-                </label>
-              </div>
-              <div class="field-row" style="margin-top:8px;">
-                <label>
-                  Base URL <span style="color:var(--muted); font-weight:400;">(local model)</span>
-                  <input id="aiDraftBaseUrl" type="text" placeholder="http://localhost:11434/v1">
-                </label>
-                <label>
-                  Model Name
-                  <input id="aiDraftModelName" type="text" placeholder="qwen2.5-coder-3b">
-                </label>
-              </div>
-              <button id="aiDraftGenerateBtn" class="button button-quiet button-compact" style="color:var(--violet); border-color:#dcd1ff; margin-top:8px;" type="button">Generate Draft Rows</button>
-              <p id="aiDraftStatus" style="font-size:12px; margin:0;" class="note-status"></p>
+              <p style="font-size: 11.5px; color: var(--text-muted); margin: 6px 0 0 28px;">
+                If checked, student submissions are graded automatically by AI. If unchecked, submissions are saved as pending for instructor manual review.
+              </p>
             </div>
-          </details>
 
-          <!-- Bulk upload -->
-          <details class="ai-settings" style="margin-bottom: 20px;">
-            <summary><span class="settings-icon">✍</span> Bulk Paste Questions</summary>
-            <div class="ai-settings-content">
-              <p>Paste questions (one per line). They will be added to the assessment pool.</p>
-              <textarea id="bulkQuestionsInput" placeholder="Explain the difference between a class and an object.&#10;What is inheritance in OOP?"></textarea>
-              <button id="bulkAddBtn" class="button button-quiet button-compact" type="button">Add to List</button>
+            <div>
+              <label class="toggle-row" style="margin-top: 4px;">
+                <input type="checkbox" id="vivaShowResults" checked>
+                <span>Allow students to view detailed score &amp; feedback upon submission</span>
+              </label>
             </div>
-          </details>
+          </div>
+        </section>
 
-          <div id="questionsContainer">
-            <!-- Questions rows are rendered here -->
+        <!-- Right Column: Question Bank & AI Auto-Generator -->
+        <section class="panel">
+          <div class="panel-heading-spread">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="step-label">02</span>
+              <div>
+                <p class="eyebrow">Question Bank</p>
+                <h2>Questions &amp; Rubrics (<span id="questionCountTally">0</span>)</h2>
+              </div>
+            </div>
+            <button type="button" id="addQuestionBtn" class="button button-secondary button-compact">+ Add Question</button>
           </div>
 
-          <button id="addManualQuestionBtn" class="button button-quiet button-full" type="button" style="margin-top: 10px;">+ Add Question Manually</button>
-        </section>
-      </div>
+          <!-- AI Question Generator for Teacher -->
+          <div class="ai-gen-box" style="margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <strong style="font-size: 13px; color: var(--text-primary);">⚡ AI Question &amp; Rubric Auto-Generator</strong>
+              <span class="badge badge-primary">Ollama / Cloud</span>
+            </div>
+            <div class="field-row" style="margin-bottom: 10px;">
+              <div>
+                <label style="font-size: 11px;">Topic / Key Concepts</label>
+                <input type="text" id="aiGenTopic" placeholder="e.g. CPU Scheduling &amp; Deadlocks">
+              </div>
+              <div>
+                <label style="font-size: 11px;">Count</label>
+                <input type="number" id="aiGenCount" min="1" max="20" value="3">
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+              <button type="button" id="aiGenBtn" class="button button-primary button-compact" onclick="generateTeacherQuestions()">
+                Generate Questions via AI ⚡
+              </button>
+              <span id="aiGenStatus" style="font-size: 11.5px; font-weight: 700;"></span>
+            </div>
+          </div>
 
-      <div class="builder-actions">
-        <span id="saveError" class="validation" style="margin-right: auto; align-self: center;"></span>
-        <button id="cancelBtn" class="button button-quiet" type="button">Cancel</button>
-        <button id="saveAssessmentBtn" class="button button-primary" type="submit">Save Assessment Viva <span aria-hidden="true">→</span></button>
+          <div id="questionsContainer" style="margin-top: 14px; display: grid; gap: 12px;">
+            <!-- Injected dynamically -->
+          </div>
+
+          <div id="builderStatus" style="margin-top: 14px; font-size: 13px; font-weight: 700; color: var(--primary);"></div>
+        </section>
       </div>
     </form>
   </main>
 
   <script>
-    // Check if editing
     const urlParams = new URLSearchParams(window.location.search);
     const assessmentId = urlParams.get("id");
-
-    const teacherDisplay = document.getElementById("teacherDisplay");
-    const builderActionLabel = document.getElementById("builderActionLabel");
-    const builderTitle = document.getElementById("builderTitle");
-    const builderForm = document.getElementById("builderForm");
 
     const vivaTitle = document.getElementById("vivaTitle");
     const vivaSubject = document.getElementById("vivaSubject");
@@ -248,72 +231,147 @@
     const vivaCountMode = document.getElementById("vivaCountMode");
     const vivaCountMin = document.getElementById("vivaCountMin");
     const vivaCountMax = document.getElementById("vivaCountMax");
+    const vivaAiGrading = document.getElementById("vivaAiGrading");
     const vivaShowResults = document.getElementById("vivaShowResults");
-    const fieldClass = document.getElementById("fieldClass");
-    const fieldSection = document.getElementById("fieldSection");
-    const fieldEmail = document.getElementById("fieldEmail");
-
-    const aiDraftFile = document.getElementById("aiDraftFile");
-    const aiDraftLevel = document.getElementById("aiDraftLevel");
-    const aiDraftCount = document.getElementById("aiDraftCount");
-    const aiDraftGenerateBtn = document.getElementById("aiDraftGenerateBtn");
-    const aiDraftStatus = document.getElementById("aiDraftStatus");
-    
-    const aiDraftBaseUrl = document.getElementById("aiDraftBaseUrl");
-    const aiDraftModelName = document.getElementById("aiDraftModelName");
-    if (aiDraftBaseUrl) aiDraftBaseUrl.value = localStorage.getItem("viva_teacher_base_url") || "";
-    if (aiDraftModelName) aiDraftModelName.value = localStorage.getItem("viva_teacher_model_name") || "";
-
-    const bulkQuestionsInput = document.getElementById("bulkQuestionsInput");
-    const bulkAddBtn = document.getElementById("bulkAddBtn");
-
     const questionsContainer = document.getElementById("questionsContainer");
-    const addManualQuestionBtn = document.getElementById("addManualQuestionBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-    const saveError = document.getElementById("saveError");
+    const questionCountTally = document.getElementById("questionCountTally");
+    const addQuestionBtn = document.getElementById("addQuestionBtn");
+    const saveVivaBtn = document.getElementById("saveVivaBtn");
+    const builderStatus = document.getElementById("builderStatus");
 
-    let teacher = null;
-    let questionsList = []; // Array of { question, reference_answer, marks }
+    let questionsList = [];
 
-    // Toggle count max input based on count mode
-    vivaCountMode.addEventListener("change", () => {
-      if (vivaCountMode.value === "fixed") {
-        document.getElementById("countMaxLabel").style.opacity = "0.5";
-        vivaCountMax.disabled = true;
-        // Keep them in sync in UI
-        vivaCountMax.value = vivaCountMin.value;
-      } else {
-        document.getElementById("countMaxLabel").style.opacity = "1";
-        vivaCountMax.disabled = false;
+    function renderQuestions() {
+      questionCountTally.textContent = questionsList.length;
+      if (!questionsList.length) {
+        questionsContainer.innerHTML = `
+          <div style="text-align: center; padding: 30px; background: var(--surface-elevated); border-radius: var(--radius-md);">
+            <p style="color: var(--text-muted); font-size: 13.5px;">No questions added yet. Click "+ Add Question" or generate with AI above.</p>
+          </div>
+        `;
+        return;
       }
-    });
-    vivaCountMin.addEventListener("input", () => {
-      if (vivaCountMode.value === "fixed") {
-        vivaCountMax.value = vivaCountMin.value;
-      }
-    });
 
-    async function checkLogin() {
-      const activeTeacher = await Auth.check();
-      if (activeTeacher) {
-        teacher = activeTeacher;
-        if (assessmentId) {
-          loadAssessmentDetails();
-        } else if (questionsList.length === 0) {
-          addQuestionRow();
-          addQuestionRow();
-          addQuestionRow();
-          vivaCountMode.dispatchEvent(new Event("change"));
-        }
-      }
+      questionsContainer.innerHTML = questionsList.map((q, idx) => `
+        <div class="question-item-card" data-idx="${idx}">
+          <div class="q-card-actions">
+            ${idx > 0 ? `<button type="button" class="q-btn-icon" title="Move Up" onclick="moveQuestion(${idx}, -1)">▲</button>` : ''}
+            ${idx < questionsList.length - 1 ? `<button type="button" class="q-btn-icon" title="Move Down" onclick="moveQuestion(${idx}, 1)">▼</button>` : ''}
+            <button type="button" class="q-btn-icon" style="color: var(--danger);" title="Remove Question" onclick="removeQuestion(${idx})">✕</button>
+          </div>
+
+          <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <span class="badge badge-primary">Q${idx + 1}</span>
+            <input type="number" class="q-marks" value="${q.marks || 10}" min="1" max="100" style="width: 80px; padding: 4px 8px; font-size: 12px;" title="Marks">
+            <span style="font-size: 12px; color: var(--text-muted);">Marks</span>
+          </div>
+          <div style="margin-bottom: 10px;">
+            <label style="font-size: 11.5px;">Oral Question Prompt</label>
+            <input type="text" class="q-text" value="${escapeHtml(q.question)}" placeholder="Enter oral viva question prompt..." required>
+          </div>
+          <div>
+            <label style="font-size: 11.5px;">Reference / Model Answer &amp; Key Terminology</label>
+            <textarea class="q-ref" placeholder="Enter expected terminology, core points, or model answer..." style="min-height: 70px;">${escapeHtml(q.reference_answer || "")}</textarea>
+          </div>
+        </div>
+      `).join('');
+
+      // Bind input events
+      document.querySelectorAll(".question-item-card").forEach(card => {
+        const idx = parseInt(card.dataset.idx);
+        card.querySelector(".q-text").addEventListener("input", (e) => {
+          questionsList[idx].question = e.target.value;
+        });
+        card.querySelector(".q-ref").addEventListener("input", (e) => {
+          questionsList[idx].reference_answer = e.target.value;
+        });
+        card.querySelector(".q-marks").addEventListener("input", (e) => {
+          questionsList[idx].marks = parseFloat(e.target.value) || 10;
+        });
+      });
     }
 
-    async function loadAssessmentDetails() {
-      builderActionLabel.textContent = "Modify assessment parameters";
-      builderTitle.textContent = "Edit Assessment";
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
+
+    function addQuestion(question = "", reference = "", marks = 10) {
+      questionsList.push({ question, reference_answer: reference, marks });
+      renderQuestions();
+    }
+
+    window.removeQuestion = function(idx) {
+      questionsList.splice(idx, 1);
+      renderQuestions();
+    };
+
+    window.moveQuestion = function(idx, offset) {
+      const newIdx = idx + offset;
+      if (newIdx < 0 || newIdx >= questionsList.length) return;
+      const temp = questionsList[idx];
+      questionsList[idx] = questionsList[newIdx];
+      questionsList[newIdx] = temp;
+      renderQuestions();
+    };
+
+    addQuestionBtn.addEventListener("click", () => {
+      addQuestion("", "", 10);
+    });
+
+    window.generateTeacherQuestions = async function() {
+      const topic = document.getElementById("aiGenTopic").value.trim() || vivaSubject.value.trim() || "Computer Science";
+      const count = parseInt(document.getElementById("aiGenCount").value) || 3;
+      const statusEl = document.getElementById("aiGenStatus");
+      const btn = document.getElementById("aiGenBtn");
+
+      btn.disabled = true;
+      statusEl.textContent = "AI generating questions...";
+      statusEl.style.color = "var(--primary)";
+
+      try {
+        const res = await fetch("/api/teacher/generate-questions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            subject: topic,
+            question_count: count,
+            level: "medium"
+          })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Generation failed");
+
+        const generated = data.questions || [];
+        generated.forEach(g => {
+          addQuestion(g.question, g.reference_answer, 10);
+        });
+
+        statusEl.textContent = `✓ Added ${generated.length} AI questions!`;
+        statusEl.style.color = "var(--success)";
+        if (window.Toast) Toast.success(`Added ${generated.length} AI viva questions to bank!`);
+      } catch (err) {
+        statusEl.textContent = `Error: ${err.message}`;
+        statusEl.style.color = "var(--danger)";
+        if (window.Toast) Toast.error(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    };
+
+    async function loadExistingAssessment() {
+      if (!assessmentId) {
+        addQuestion("Explain the primary architectural definition, scope, and use cases of the core topic.", "Comprehensive overview with clear technical terminology and concrete examples.", 10);
+        addQuestion("What are the key advantages, limitations, and scalability tradeoffs?", "Structured performance considerations, complexity factors, and trade-offs.", 10);
+        return;
+      }
+
+      document.getElementById("builderTitle").textContent = "Edit Oral Assessment";
       try {
         const res = await fetch(`/api/teacher/assessments/${assessmentId}`);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error("Could not load assessment details");
         const data = await res.json();
         const a = data.assessment;
 
@@ -322,282 +380,96 @@
         vivaDuration.value = a.duration_minutes;
         vivaInstructions.value = a.instructions;
         vivaOrdering.value = a.question_ordering || "fixed";
-        vivaCountMode.value = a.question_count.mode;
-        vivaCountMin.value = a.question_count.min;
-        vivaCountMax.value = a.question_count.max;
-        vivaShowResults.checked = a.show_results;
+        vivaAiGrading.checked = a.ai_grading_enabled !== false;
+        vivaShowResults.checked = Boolean(a.show_results);
 
-        // Restore checklist
-        const sFields = a.student_fields || [];
-        fieldClass.checked = sFields.some(f => f.key === "class");
-        fieldSection.checked = sFields.some(f => f.key === "section");
-        fieldEmail.checked = sFields.some(f => f.key === "email");
+        if (a.question_count) {
+          vivaCountMode.value = a.question_count.mode || "fixed";
+          vivaCountMin.value = a.question_count.min || 1;
+          vivaCountMax.value = a.question_count.max || 1;
+        }
 
-        // Load questions
-        questionsList = a.questions || [];
+        questionsList = (a.questions || []).map(q => ({
+          question: q.question,
+          reference_answer: q.reference_answer || "",
+          marks: q.marks || 10
+        }));
+
         renderQuestions();
-        vivaCountMode.dispatchEvent(new Event("change"));
-      } catch {
-        saveError.textContent = "Failed to load assessment details.";
+      } catch (err) {
+        builderStatus.textContent = err.message;
+        builderStatus.style.color = "var(--danger)";
       }
     }
 
-    function renderQuestions() {
-      questionsContainer.innerHTML = "";
-      if (questionsList.length === 0) {
-        questionsContainer.innerHTML = `<p style="font-size:12px; color:var(--muted); text-align:center; padding:20px 0;" id="emptyQuestions">Add at least one question to the assessment pool.</p>`;
+    saveVivaBtn.addEventListener("click", async () => {
+      builderStatus.textContent = "";
+      const title = vivaTitle.value.trim();
+      const subject = vivaSubject.value.trim();
+
+      if (!title || !subject) {
+        builderStatus.textContent = "Please provide both a Title and Subject.";
+        builderStatus.style.color = "var(--danger)";
+        if (window.Toast) Toast.warning("Please provide both a Title and Subject.");
         return;
       }
 
-      questionsList.forEach((q, index) => {
-        const row = document.createElement("div");
-        row.className = "question-row";
-        row.innerHTML = `
-          <button type="button" class="delete-question-btn" onclick="deleteQuestion(${index})">Remove</button>
-          <div style="font-weight: 750; font-size:12px; color:var(--muted); margin-bottom:8px;">QUESTION ${index + 1}</div>
-          <div style="display: grid; gap: 10px;">
-            <label>
-              Question Text
-              <input type="text" class="q-text-input" value="${escapeHtml(q.question)}" required placeholder="e.g. Describe the purpose of key-value databases.">
-            </label>
-            <label>
-              Accepted reference answers / keywords (Guides the AI evaluation)
-              <textarea class="q-ref-input" style="min-height:70px;" placeholder="Describe expected answer details, keywords, or definitions...">${escapeHtml(q.reference_answer || "")}</textarea>
-            </label>
-            <div style="display: grid; grid-template-columns: 1fr; width: 140px;">
-              <label>
-                Marks allocation
-                <input type="number" class="q-marks-input" min="1" max="100" value="${q.marks || 10}" required>
-              </label>
-            </div>
-          </div>
-        `;
-        questionsContainer.appendChild(row);
-      });
-    }
-
-    window.deleteQuestion = function (index) {
-      syncQuestionsFromDOM();
-      questionsList.splice(index, 1);
-      renderQuestions();
-    };
-
-    function addQuestionRow(questionVal = "", refVal = "", marksVal = 10) {
-      syncQuestionsFromDOM();
-      questionsList.push({
-        question: questionVal,
-        reference_answer: refVal,
-        marks: marksVal
-      });
-      renderQuestions();
-    }
-
-    function syncQuestionsFromDOM() {
-      const rows = questionsContainer.querySelectorAll(".question-row");
-      const newList = [];
-      rows.forEach((row) => {
-        const textInput = row.querySelector(".q-text-input");
-        const refInput = row.querySelector(".q-ref-input");
-        const marksInput = row.querySelector(".q-marks-input");
-        
-        if (textInput && refInput && marksInput) {
-          newList.push({
-            question: textInput.value.trim(),
-            reference_answer: refInput.value.trim(),
-            marks: parseFloat(marksInput.value) || 10
-          });
-        }
-      });
-      questionsList = newList;
-    }
-
-    addManualQuestionBtn.addEventListener("click", () => {
-      addQuestionRow();
-      // Scroll to bottom of list
-      window.scrollTo(0, document.body.scrollHeight);
-    });
-
-    // Bulk Paste
-    bulkAddBtn.addEventListener("click", () => {
-      const text = bulkQuestionsInput.value.trim();
-      if (!text) return;
-      const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
-      lines.forEach(line => {
-        addQuestionRow(line, "", 10);
-      });
-      bulkQuestionsInput.value = "";
-      alert(`Added ${lines.length} questions from text input.`);
-    });
-
-    // AI Draft Generator
-    aiDraftGenerateBtn.addEventListener("click", async () => {
-      aiDraftStatus.textContent = "";
-      const file = aiDraftFile.files[0];
-      const count = parseInt(aiDraftCount.value);
-
-      if (!file) {
-        aiDraftStatus.textContent = "Please choose a reference file.";
-        aiDraftStatus.className = "note-status note-status-warn";
-        return;
-      }
-      if (isNaN(count) || count < 1 || count > 30) {
-        aiDraftStatus.textContent = "Choose count between 1 and 30.";
-        aiDraftStatus.className = "note-status note-status-warn";
+      if (!questionsList.length) {
+        builderStatus.textContent = "Please add at least one question.";
+        builderStatus.style.color = "var(--danger)";
+        if (window.Toast) Toast.warning("Please add at least one question.");
         return;
       }
 
-      aiDraftGenerateBtn.disabled = true;
-      aiDraftStatus.textContent = "Reading file...";
-      aiDraftStatus.className = "note-status note-status-ok";
-      aiDraftStatus.style.color = "var(--blue)";
-
-      const reader = new FileReader();
-      reader.onload = async function() {
-        const base64Content = reader.result.split(",")[1];
-        aiDraftStatus.textContent = "Uploading context...";
-
-        try {
-          const ownerKey = `teacher_${teacher.id}`;
-          const teacherKey = localStorage.getItem("viva_teacher_api_key") || "";
-          const teacherBaseUrl = (aiDraftBaseUrl ? aiDraftBaseUrl.value.trim() : "") || localStorage.getItem("viva_teacher_base_url") || "";
-          const teacherModelName = (aiDraftModelName ? aiDraftModelName.value.trim() : "") || localStorage.getItem("viva_teacher_model_name") || "";
-          
-          // Save back to local storage for convenience
-          if (teacherBaseUrl) localStorage.setItem("viva_teacher_base_url", teacherBaseUrl);
-          if (teacherModelName) localStorage.setItem("viva_teacher_model_name", teacherModelName);
-          
-          const headers = { 
-            "Content-Type": "application/json",
-          };
-          if (teacherKey) headers["X-Api-Key"] = teacherKey;
-          if (teacherBaseUrl) headers["X-Base-Url"] = teacherBaseUrl;
-          if (teacherModelName) headers["X-Model-Name"] = teacherModelName;
-
-          // 1. Upload file
-          const uploadRes = await fetch("/api/library/materials", {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify({
-              owner_key: ownerKey,
-              file_name: file.name,
-              mime_type: file.type || "application/octet-stream",
-              content_base64: base64Content
-            })
-          });
-          const uploadData = await uploadRes.json();
-          if (!uploadRes.ok) throw new Error(uploadData.error || "Upload failed");
-
-          aiDraftStatus.textContent = "Generating question drafts via AI...";
-          // 2. Generate questions
-          const genRes = await fetch("/api/library/generate", {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify({
-              owner_key: ownerKey,
-              material_ids: [uploadData.material.id],
-              level: aiDraftLevel.value,
-              question_count: count
-            })
-          });
-          const genData = await genRes.json();
-          if (!genRes.ok) throw new Error(genData.error || "Generation failed");
-
-          // 3. Inject rows
-          syncQuestionsFromDOM();
-          const generated = genData.questions || [];
-          generated.forEach(q => {
-            questionsList.push({
-              question: q.question,
-              reference_answer: q.reference_answer,
-              marks: 10
-            });
-          });
-          renderQuestions();
-          
-          aiDraftStatus.textContent = `Generated ${generated.length} questions. Check details below!`;
-          aiDraftStatus.style.color = "var(--green)";
-        } catch (err) {
-          aiDraftStatus.textContent = err.message || "Draft generation failed.";
-          aiDraftStatus.className = "note-status note-status-warn";
-        } finally {
-          aiDraftGenerateBtn.disabled = false;
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-
-    // Form Submission Save
-    builderForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      saveError.textContent = "";
-      syncQuestionsFromDOM();
-
-      if (questionsList.length === 0) {
-        saveError.textContent = "Please add at least one question to the assessment pool.";
-        return;
-      }
-
-      const minCount = parseInt(vivaCountMin.value);
-      const maxCount = parseInt(vivaCountMax.value);
-      if (questionsList.length < maxCount) {
-        saveError.textContent = `You have only added ${questionsList.length} questions. You need at least ${maxCount} questions to cover your maximum question count.`;
-        return;
-      }
-
-      const studentFields = [
-        { key: "name", label: "Full Name", required: true },
-        { key: "roll_no", label: "Roll Number", required: true }
-      ];
-      if (fieldClass.checked) studentFields.push({ key: "class", label: "Class / Year", required: true });
-      if (fieldSection.checked) studentFields.push({ key: "section", label: "Section", required: true });
-      if (fieldEmail.checked) studentFields.push({ key: "email", label: "Email Address", required: true });
+      saveVivaBtn.disabled = true;
+      saveVivaBtn.textContent = "Saving...";
 
       const payload = {
-        title: vivaTitle.value.trim(),
-        subject: vivaSubject.value.trim(),
+        title: title,
+        subject: subject,
+        duration_minutes: parseInt(vivaDuration.value) || 20,
         instructions: vivaInstructions.value.trim(),
-        duration_minutes: parseInt(vivaDuration.value),
-        question_count_mode: vivaCountMode.value,
-        question_count_min: minCount,
-        question_count_max: maxCount,
         question_ordering: vivaOrdering.value,
-        student_fields: studentFields,
-        show_results: vivaShowResults.checked,
+        question_count_mode: vivaCountMode.value,
+        question_count_min: parseInt(vivaCountMin.value) || 1,
+        question_count_max: parseInt(vivaCountMax.value) || questionsList.length,
+        show_results: vivaShowResults.checked ? 1 : 0,
+        ai_grading_enabled: vivaAiGrading.checked ? 1 : 0,
+        student_fields: [
+          { key: "name", label: "Full Name", required: true },
+          { key: "roll_no", label: "Roll Number", required: true }
+        ],
         questions: questionsList
       };
 
-      const url = assessmentId ? `/api/teacher/assessments/${assessmentId}` : "/api/teacher/assessments";
-      const method = assessmentId ? "PUT" : "POST";
-
       try {
+        const url = assessmentId ? `/api/teacher/assessments/${assessmentId}` : "/api/teacher/assessments";
+        const method = assessmentId ? "PUT" : "POST";
+
         const res = await fetch(url, {
           method: method,
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
+
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Save failed.");
-        
-        window.location.href = "/teacher";
+
+        const targetId = assessmentId || data.assessment_id;
+        if (window.Toast) Toast.success("Assessment saved! Redirecting to share console...");
+        setTimeout(() => {
+          window.location.href = `/teacher/vivas/share?id=${targetId}`;
+        }, 600);
       } catch (err) {
-        saveError.textContent = err.message;
+        builderStatus.textContent = `Error: ${err.message}`;
+        builderStatus.style.color = "var(--danger)";
+        if (window.Toast) Toast.error(err.message);
+        saveVivaBtn.disabled = false;
+        saveVivaBtn.textContent = "Save Assessment 💾";
       }
     });
 
-    cancelBtn.addEventListener("click", () => {
-      window.location.href = "/teacher";
-    });
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    checkLogin();
+    document.addEventListener("DOMContentLoaded", loadExistingAssessment);
   </script>
 </body>
 </html>

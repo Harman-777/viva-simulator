@@ -1,217 +1,219 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Viva submission confirmation and feedback.">
-  <title>Assessment Complete · viva.</title>
+  <meta name="description" content="Viva Examination Submitted — View score breakdown and feedback.">
+  <title>Assessment Complete · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <style>
-    .complete-card {
-      max-width: 680px;
-      margin: 40px auto;
-      padding: 36px;
+    .complete-layout {
+      max-width: 860px;
+      margin: 30px auto;
+    }
+
+    .congrats-card {
+      background: var(--surface-acrylic);
+      border: 1px solid var(--border-active);
+      border-radius: var(--radius-xl);
+      padding: 38px 30px;
       text-align: center;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg), var(--shadow-glow);
     }
-    .check-icon {
-      font-size: 52px;
-      color: var(--green);
+
+    .question-feedback-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
       margin-bottom: 16px;
-      display: inline-block;
     }
-    .result-release-panel {
-      text-align: left;
-      margin-top: 32px;
-      border-top: 1px solid var(--line);
-      padding-top: 24px;
-    }
-    .feedback-list {
-      display: grid;
-      gap: 16px;
-      margin-top: 18px;
-    }
-    .feedback-q-card {
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 18px;
-      background: var(--canvas);
-    }
-    .feedback-q-card h3 {
-      font-size: 15px;
-      margin-bottom: 8px;
-      font-weight: 750;
-    }
-    .feedback-q-card p {
-      font-size: 13px;
-      line-height: 1.5;
-      color: var(--ink-soft);
-      margin-bottom: 8px;
+
+    @media print {
+      .topbar, .theme-toggle-btn, .button { display: none !important; }
+      body { background: #ffffff !important; color: #000000 !important; }
+      .complete-layout { margin: 0; max-width: 100%; }
+      .congrats-card, .question-feedback-card { border: 1px solid #ccc !important; box-shadow: none !important; background: #fff !important; }
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
       </a>
-      <div class="status-indicator">
-        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-right: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-        <span class="status-dot"></span>
-        <span id="completeStatus">Completed</span>
+      <div class="topbar-actions">
+        <button type="button" class="button button-primary button-compact" onclick="window.print()">🖨️ Print Summary</button>
+        <a href="/" class="button button-quiet button-compact">Home Gateway</a>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
       </div>
     </header>
 
-    <section class="panel complete-card">
-      <span class="check-icon" id="successIcon">✓</span>
-      <h2 id="completeHeading" style="font-size: 28px; font-weight: 800; letter-spacing: -0.04em;">Assessment Submitted</h2>
-      <p id="completeMeta" style="color: var(--muted); font-size: 14px; margin-top: 8px;">Attempt saved successfully. Thank you for practicing.</p>
+    <div class="complete-layout">
+      <!-- Submission Badge Card -->
+      <div class="congrats-card">
+        <div style="font-size: 52px; margin-bottom: 10px;">🎉</div>
+        <span class="eyebrow" id="examSubject">EXAMINATION SUBMITTED</span>
+        <h1 id="examTitle" style="font-size: 28px; margin: 8px 0;">Oral Viva Complete!</h1>
+        <p id="studentGreeting" style="font-size: 14.5px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 20px;">
+          Your oral viva examination answers have been recorded successfully.
+        </p>
 
-      <!-- Restricted View (Default) -->
-      <div id="restrictedView" style="margin-top: 20px; line-height: 1.6; color: var(--ink-soft); font-size: 14px;">
-        Your answers have been stored and sent to your instructor for review. Score release and AI feedback will be visible once published by the teacher.
-        <div style="margin-top: 28px;">
-          <a href="/" class="button button-quiet">Back to Home</a>
+        <div id="scoreBanner" style="display: none; align-items: center; justify-content: center; gap: 16px; margin: 20px 0;">
+          <div>
+            <span class="eyebrow">FINAL AGGREGATE SCORE</span>
+            <div id="finalScoreDisplay" style="font-family: var(--font-mono); font-size: 42px; font-weight: 900; color: var(--primary);">-- / --</div>
+          </div>
+        </div>
+
+        <div id="pendingReviewNotice" style="display: none; padding: 14px; background: var(--surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border); max-width: 500px; margin: 16px auto 0;">
+          <p style="font-size: 13.5px; color: var(--text-secondary);">
+            📝 <strong>Pending Instructor Review:</strong> Your oral responses are awaiting manual evaluation by your professor. Scores will be published once marked.
+          </p>
         </div>
       </div>
 
-      <!-- Released View (Scores/Feedback) -->
-      <div id="releasedView" class="result-release-panel" style="display: none;">
-        <h3 style="font-size: 18px; font-weight: 750; margin-bottom: 12px; letter-spacing:-0.02em;">Review & Feedback Breakdown</h3>
-        <p style="font-size: 14px; color: var(--ink-soft); margin-bottom: 20px;">The instructor has released the score summary. Here is a review of your semantic assessment:</p>
-
-        <div class="dashboard-grid" style="margin-top: 0; margin-bottom: 24px; grid-template-columns: 1fr 1fr;">
-          <article class="metric metric-score" style="min-height: 110px; padding: 14px;">
-            <span class="metric-label">Grade Score</span>
-            <strong id="finalScoreDisplay" style="margin: 6px 0;">—</strong>
-            <small>Points earned</small>
-          </article>
-          <article class="metric" style="min-height: 110px; padding: 14px;">
-            <span class="metric-label">Performance</span>
-            <strong id="percentageDisplay" style="margin: 6px 0;">—%</strong>
-            <small id="readinessDisplay">Calculated readiness</small>
-          </article>
-        </div>
-
-        <div class="feedback-list" id="feedbackList">
-          <!-- Question cards -->
-        </div>
-
-        <div style="margin-top: 32px; text-align: center;">
-          <a href="/" class="button button-quiet">Exit Exam Workspace</a>
-        </div>
+      <!-- Question Feedback Breakdown (If enabled) -->
+      <div id="detailedFeedbackSection" style="display: none;">
+        <h2 style="font-size: 20px; margin-bottom: 16px;">Question-by-Question 4-Dimension Rubric Breakdown</h2>
+        <div id="feedbackCardsList"></div>
       </div>
-    </section>
+    </div>
   </main>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
     const attemptToken = urlParams.get("attempt");
 
-    const completeHeading = document.getElementById("completeHeading");
-    const completeMeta = document.getElementById("completeMeta");
-    const restrictedView = document.getElementById("restrictedView");
-    const releasedView = document.getElementById("releasedView");
-    const successIcon = document.getElementById("successIcon");
-
+    const examTitle = document.getElementById("examTitle");
+    const examSubject = document.getElementById("examSubject");
+    const studentGreeting = document.getElementById("studentGreeting");
+    const scoreBanner = document.getElementById("scoreBanner");
     const finalScoreDisplay = document.getElementById("finalScoreDisplay");
-    const percentageDisplay = document.getElementById("percentageDisplay");
-    const readinessDisplay = document.getElementById("readinessDisplay");
-    const feedbackList = document.getElementById("feedbackList");
+    const pendingReviewNotice = document.getElementById("pendingReviewNotice");
+    const detailedFeedbackSection = document.getElementById("detailedFeedbackSection");
+    const feedbackCardsList = document.getElementById("feedbackCardsList");
 
     async function loadResults() {
       if (!attemptToken) {
-        completeHeading.textContent = "Invalid attempt";
-        completeMeta.textContent = "No valid attempt token was found in the URL.";
-        successIcon.textContent = "⚠";
-        successIcon.style.color = "var(--red)";
-        restrictedView.style.display = "block";
+        window.location.href = "/";
         return;
       }
 
       try {
         const res = await fetch(`/api/public/attempts/${attemptToken}`);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error("Attempt not found");
         const data = await res.json();
-        const attempt = data.attempt;
+        const a = data.attempt;
 
-        completeHeading.textContent = `${attempt.title} Complete`;
-        completeMeta.textContent = `Completed by ${attempt.student.name || "Student"} (${attempt.student.roll_no || "N/A"})`;
+        examTitle.textContent = a.title;
+        examSubject.textContent = (a.subject || "VIVA").toUpperCase();
+        studentGreeting.textContent = `Well done, ${a.student.name || 'Student'}! Your responses have been submitted to your instructor.`;
 
-        if (attempt.show_results && attempt.state === "submitted") {
-          restrictedView.style.display = "none";
-          releasedView.style.display = "block";
-          renderReleasedFeedback(attempt);
-        } else {
-          restrictedView.style.display = "block";
-          releasedView.style.display = "none";
+        if (!a.show_results) {
+          pendingReviewNotice.style.display = "block";
+          pendingReviewNotice.innerHTML = "<p style='font-size: 13.5px; color: var(--text-secondary);'>Detailed feedback is restricted for this assessment. Results will be published by your instructor.</p>";
+          return;
         }
-      } catch {
-        // Fallback to basic message if fetch fails
-        restrictedView.style.display = "block";
+
+        const questions = a.questions || [];
+        let totalMarks = 0;
+        let earnedMarks = 0;
+        let hasEvaluations = false;
+
+        questions.forEach(q => {
+          totalMarks += (q.marks || 0);
+          if (q.final_score !== undefined) {
+            earnedMarks += q.final_score;
+            hasEvaluations = true;
+          }
+        });
+
+        if (hasEvaluations && a.ai_grading_enabled) {
+          scoreBanner.style.display = "flex";
+          finalScoreDisplay.textContent = `${earnedMarks} / ${totalMarks}`;
+          detailedFeedbackSection.style.display = "block";
+
+          feedbackCardsList.innerHTML = questions.map((q, idx) => {
+            const evalObj = q.evaluation || {};
+            const dim = evalObj.dimension_scores;
+
+            return `
+              <div class="question-feedback-card">
+                <div class="panel-heading-spread" style="margin-bottom: 10px;">
+                  <span class="badge badge-primary">Question ${idx + 1}</span>
+                  <span style="font-family: var(--font-mono); font-weight: 700; color: var(--primary); font-size: 14px;">${q.final_score || 0} / ${q.marks} Marks</span>
+                </div>
+
+                <h3 style="font-size: 16.5px; margin-bottom: 12px; color: var(--text-primary); line-height: 1.4;">${q.question}</h3>
+
+                <div style="margin-bottom: 12px;">
+                  <label style="font-size: 11.5px;">Your Answer</label>
+                  <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.45; background: var(--surface-elevated); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                    ${q.answer ? escapeHtml(q.answer) : '<em>[Blank / No answer provided]</em>'}
+                  </p>
+                </div>
+
+                ${dim ? `
+                  <div class="rubric-breakdown-grid" style="margin-bottom: 12px;">
+                    <div class="rubric-meter-card">
+                      <div class="rubric-meter-header">
+                        <span>Precision</span>
+                        <span style="color: var(--primary);">${dim.precision} / ${dim.max_precision || (q.marks*0.2)}</span>
+                      </div>
+                      <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.precision/(dim.max_precision||1))*100}%; background: var(--primary);"></div></div>
+                    </div>
+                    <div class="rubric-meter-card">
+                      <div class="rubric-meter-header">
+                        <span>Clarity</span>
+                        <span style="color: var(--secondary);">${dim.clarity} / ${dim.max_clarity || (q.marks*0.2)}</span>
+                      </div>
+                      <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.clarity/(dim.max_clarity||1))*100}%; background: var(--secondary);"></div></div>
+                    </div>
+                    <div class="rubric-meter-card">
+                      <div class="rubric-meter-header">
+                        <span>Evidence</span>
+                        <span style="color: var(--accent-cyan);">${dim.evidence} / ${dim.max_evidence || (q.marks*0.2)}</span>
+                      </div>
+                      <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.evidence/(dim.max_evidence||1))*100}%; background: var(--accent-cyan);"></div></div>
+                    </div>
+                    <div class="rubric-meter-card">
+                      <div class="rubric-meter-header">
+                        <span>Keywords</span>
+                        <span style="color: var(--success);">${dim.keywords} / ${dim.max_keywords || (q.marks*0.4)}</span>
+                      </div>
+                      <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.keywords/(dim.max_keywords||1))*100}%; background: var(--success);"></div></div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <div style="background: var(--surface-elevated); padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                  <strong style="font-size: 12px; color: var(--text-primary); display: block; margin-bottom: 4px;">Examiner Rubric Feedback</strong>
+                  <p style="font-size: 12.5px; color: var(--text-secondary); line-height: 1.45;">${evalObj.feedback || 'Evaluated.'}</p>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          pendingReviewNotice.style.display = "block";
+        }
+      } catch (err) {
+        if (window.Toast) Toast.error(err.message);
       }
     }
 
-    function renderReleasedFeedback(attempt) {
-      let totalEarned = 0;
-      let totalMax = 0;
-      const qs = attempt.questions || [];
-
-      feedbackList.innerHTML = qs.map((q, index) => {
-        const score = q.final_score !== undefined ? q.final_score : 0;
-        totalEarned += score;
-        totalMax += q.marks;
-
-        const evalObj = q.evaluation || {};
-        const covered = evalObj.covered_concepts || [];
-        const missing = evalObj.missing_concepts || [];
-
-        const coveredTags = covered.map(c => `<span class="keyword-tag" style="background:#e6f6f0; color:var(--green); border-color:#d0ecd8;">${escapeHtml(c)}</span>`).join("");
-        const missingTags = missing.map(c => `<span class="keyword-tag" style="background:#feebe8; color:var(--red); border-color:#fcc8c2;">${escapeHtml(c)}</span>`).join("");
-
-        return `
-          <div class="feedback-q-card" style="text-align:left;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <h3 style="margin:0;">Q${index + 1}: ${escapeHtml(q.question)}</h3>
-              <span class="score-badge ${score >= (q.marks * 0.75) ? 'badge-correct' : score >= (q.marks * 0.4) ? 'badge-partial' : 'badge-incorrect'}">${score} / ${q.marks}</span>
-            </div>
-            <p style="margin: 10px 0;"><strong>Your Answer:</strong> ${escapeHtml(q.answer || "(No response submitted)")}</p>
-            <p style="margin: 10px 0;"><strong>AI Feedback:</strong> ${escapeHtml(evalObj.feedback || evalObj.rationale || "Response evaluated.")}</p>
-            
-            <div style="margin: 10px 0;">
-              <strong style="font-size:12px; color:var(--muted)">Covered Concepts:</strong>
-              <div class="keywords-row" style="margin-top: 4px;">
-                ${coveredTags || '<span style="font-size:11px; color:var(--muted)">None</span>'}
-              </div>
-            </div>
-
-            <div style="margin: 10px 0;">
-              <strong style="font-size:12px; color:var(--muted)">Areas to Improve:</strong>
-              <div class="keywords-row" style="margin-top: 4px;">
-                ${missingTags || '<span style="font-size:11px; color:var(--muted)">None</span>'}
-              </div>
-            </div>
-
-            <p style="font-style:italic; border-top:1px solid rgba(0,0,0,0.05); padding-top:8px; margin-top:8px; font-size:12px;">
-              <strong>Model Answer Concept:</strong> ${escapeHtml(evalObj.model_answer || "N/A")}
-            </p>
-          </div>
-        `;
-      }).join("");
-
-      finalScoreDisplay.textContent = `${totalEarned.toFixed(1)} / ${totalMax}`;
-      const pct = totalMax > 0 ? Math.round((totalEarned / totalMax) * 100) : 0;
-      percentageDisplay.textContent = `${pct}%`;
-      
-      let readiness = "Needs Practice";
-      if (pct >= 85) readiness = "Excellent";
-      else if (pct >= 70) readiness = "Good";
-      else if (pct >= 50) readiness = "Developing";
-      
-      readinessDisplay.textContent = `Readiness Level: ${readiness}`;
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
     }
+
+    document.addEventListener("DOMContentLoaded", loadResults);
   </script>
 </body>
 </html>

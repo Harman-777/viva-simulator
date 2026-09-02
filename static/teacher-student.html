@@ -1,387 +1,271 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Audit and grade student viva responses, review AI rationale, and apply overrides.">
-  <title>Student Review Workspace · viva.</title>
+  <meta name="description" content="Student Oral Attempt Inspector — Review AI evaluations, 4-dimension rubrics, and execute manual score overrides.">
+  <title>Student Attempt Review · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <script src="/static/auth.js"></script>
   <style>
-    .student-detail-header {
-      display: grid;
-      grid-template-columns: 1.4fr 0.6fr;
-      gap: 20px;
-      margin-top: 24px;
+    .student-meta-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
       margin-bottom: 24px;
-    }
-    .candidate-meta-card {
-      padding: 24px;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-    }
-    .question-review-card {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 24px;
-      background: var(--surface);
-      margin-bottom: 20px;
-      display: grid;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 16px;
     }
-    .response-section {
-      background: var(--canvas);
+
+    .answer-review-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .override-box {
+      margin-top: 18px;
       padding: 16px;
-      border-radius: 9px;
-      border-left: 4px solid var(--line-strong);
-      font-size: 13px;
-      line-height: 1.5;
-    }
-    .response-section-accepted {
-      border-left-color: var(--blue);
-      background: var(--soft-blue);
-    }
-    .override-form-group {
-      display: grid;
-      grid-template-columns: 140px 1fr auto;
-      gap: 12px;
-      align-items: end;
-      border-top: 1px solid var(--line);
-      padding-top: 18px;
-      margin-top: 8px;
-    }
-    .override-form-group input, .override-form-group textarea {
-      min-height: 38px;
-      height: 38px;
-      padding: 8px 12px;
-      font-size: 13px;
-    }
-    .override-badge {
-      display: inline-flex;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 10px;
-      font-weight: 800;
-      text-transform: uppercase;
-      color: var(--violet);
-      background: #f3efff;
-      border: 1px solid #dcd1ff;
-      margin-left: 6px;
+      border-radius: var(--radius-md);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border-active);
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
       </a>
-      <span class="back-link" id="teacherDisplay">Teacher Session</span>
-      <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-left: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-      <a href="/teacher" class="button button-quiet button-compact" style="margin-left: 12px;" id="dashboardBackBtn">Back to Dashboard</a>
+      <div class="topbar-actions">
+        <span class="badge badge-primary" id="teacherDisplay">Teacher Session</span>
+        <button type="button" class="button button-quiet button-compact" onclick="history.back()">← Back</button>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
+      </div>
     </header>
 
-    <div class="student-detail-header">
+    <div class="student-meta-card">
       <div>
-        <p class="eyebrow" id="subjectKicker">DETAILED SUBMISSION REVIEW</p>
-        <h1 id="studentNameHeader" style="margin: 6px 0 0; font-size: 32px; font-weight: 900; letter-spacing: -0.04em;">Student Name</h1>
-        <p id="studentRollHeader" style="color: var(--muted); font-size: 14px; margin-top: 4px;">Roll Number: —</p>
+        <p class="eyebrow" id="assessmentTitle">VIVA ASSESSMENT</p>
+        <h1 id="studentName" style="font-size: 26px;">Student Attempt Details</h1>
+        <p id="studentDetails" style="font-size: 13px; color: var(--text-muted); margin-top: 4px;">Loading...</p>
       </div>
-
-      <!-- Live Totals Panel -->
-      <article class="metric metric-score" style="min-height: auto; padding: 18px; display: flex; flex-direction: column; justify-content: center;">
-        <span class="metric-label" style="text-transform: uppercase; font-size: 10px; font-weight: 800; letter-spacing: 0.05em;">Calculated Grade Total</span>
-        <strong id="liveTotalDisplay" style="margin: 4px 0 0; font-size: 36px; line-height: 1;">— / —</strong>
-        <small id="gradePercentageDisplay">—% percentage</small>
-      </article>
+      <div style="text-align: right;">
+        <span class="eyebrow">FINAL AGGREGATE</span>
+        <div id="totalScoreText" style="font-family: var(--font-mono); font-size: 30px; font-weight: 900; color: var(--primary);">-- / --</div>
+      </div>
     </div>
 
-    <!-- Candidate metadata block -->
-    <section class="candidate-meta-card" style="margin-bottom: 24px;">
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;">
-        <div class="meta-box">
-          <span>Started At</span>
-          <strong id="vivaStartedAt">—</strong>
-        </div>
-        <div class="meta-box">
-          <span>Submitted At</span>
-          <strong id="vivaSubmittedAt">—</strong>
-        </div>
-        <div class="meta-box">
-          <span>Attempt Status</span>
-          <strong id="vivaState">—</strong>
-        </div>
-        <div class="meta-box" id="needsReviewBox">
-          <span>Audit Status</span>
-          <strong id="vivaReviewStatus">—</strong>
-        </div>
-      </div>
-    </section>
-
-    <!-- Question cards container -->
-    <section id="questionsListContainer" style="display: grid; gap: 20px;">
-      <div class="empty-state">Loading student attempt details...</div>
-    </section>
+    <!-- Answers List -->
+    <div id="answersListContainer" style="display: grid; gap: 16px;">
+      <p style="color: var(--text-muted); padding: 20px;">Loading student answers and AI evaluations...</p>
+    </div>
   </main>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const attemptId = urlParams.get("attempt");
+    const attemptId = urlParams.get("id");
 
-    const teacherDisplay = document.getElementById("teacherDisplay");
-    const dashboardBackBtn = document.getElementById("dashboardBackBtn");
-    
-    const studentNameHeader = document.getElementById("studentNameHeader");
-    const studentRollHeader = document.getElementById("studentRollHeader");
-    
-    const liveTotalDisplay = document.getElementById("liveTotalDisplay");
-    const gradePercentageDisplay = document.getElementById("gradePercentageDisplay");
-    
-    const vivaStartedAt = document.getElementById("vivaStartedAt");
-    const vivaSubmittedAt = document.getElementById("vivaSubmittedAt");
-    const vivaState = document.getElementById("vivaState");
-    const vivaReviewStatus = document.getElementById("vivaReviewStatus");
-    
-    const questionsListContainer = document.getElementById("questionsListContainer");
+    const assessmentTitle = document.getElementById("assessmentTitle");
+    const studentName = document.getElementById("studentName");
+    const studentDetails = document.getElementById("studentDetails");
+    const totalScoreText = document.getElementById("totalScoreText");
+    const answersListContainer = document.getElementById("answersListContainer");
 
-    let teacher = null;
-    let attemptData = null;
-    let answers = [];
-
-    async function checkLogin() {
-      const activeTeacher = await Auth.check();
-      if (activeTeacher) {
-        teacher = activeTeacher;
-        if (attemptId) {
-          loadAttemptDetails();
-        } else {
-          window.location.href = "/teacher";
-        }
+    async function loadAttempt() {
+      if (!attemptId) {
+        window.location.href = "/teacher";
+        return;
       }
-    }
 
-    async function loadAttemptDetails() {
       try {
         const res = await fetch(`/api/teacher/attempts/${attemptId}`);
-        if (!res.ok) throw new Error();
+        if (!res.ok) throw new Error("Student attempt not found");
         const data = await res.json();
-        attemptData = data.attempt;
-        answers = attemptData.answers || [];
+        const a = data.attempt;
 
-        renderStudentMetadata();
-        renderQuestionReviewCards();
-        calculateLiveTotals();
-      } catch {
-        questionsListContainer.innerHTML = `<div class="empty-state" style="color:var(--red);">Could not load student attempt details. Ensure server connection.</div>`;
+        assessmentTitle.textContent = (a.title || "VIVA ASSESSMENT").toUpperCase();
+        studentName.textContent = a.student.name || "Student Attempt";
+
+        const roll = a.student.roll_no ? `Roll No: ${a.student.roll_no}` : "";
+        const started = a.started_at ? `Started: ${new Date(a.started_at).toLocaleTimeString()}` : "";
+        const submitted = a.submitted_at ? `Submitted: ${new Date(a.submitted_at).toLocaleTimeString()}` : "";
+        studentDetails.textContent = [roll, started, submitted].filter(Boolean).join(" · ");
+
+        const answers = a.answers || [];
+        const totalMarks = answers.reduce((acc, ans) => acc + (ans.marks || 0), 0);
+        const earnedMarks = answers.reduce((acc, ans) => acc + (ans.final_score || 0), 0);
+        totalScoreText.textContent = `${earnedMarks} / ${totalMarks}`;
+
+        renderAnswers(answers);
+      } catch (err) {
+        answersListContainer.innerHTML = `<p style="color: var(--danger);">${err.message}</p>`;
       }
     }
 
-    function renderStudentMetadata() {
-      const s = attemptData.student;
-      studentNameHeader.textContent = s.name || "Student Name";
-      
-      let detailsText = `Roll Number: ${s.roll_no || "N/A"}`;
-      if (s.class) detailsText += ` · Class: ${s.class}`;
-      if (s.section) detailsText += ` · Section: ${s.section}`;
-      if (s.email) detailsText += ` · Email: ${s.email}`;
-      studentRollHeader.textContent = detailsText;
-
-      vivaStartedAt.textContent = new Date(attemptData.started_at).toLocaleString();
-      vivaSubmittedAt.textContent = attemptData.submitted_at ? new Date(attemptData.submitted_at).toLocaleString() : 'In Progress';
-      
-      vivaState.textContent = attemptData.state.toUpperCase();
-      
-      // Determine if there are low confidence answers
-      const hasLowConfidence = answers.some(a => a.evaluation.confidence === "low");
-      if (hasLowConfidence) {
-        vivaReviewStatus.innerHTML = "<span style='color:var(--red); font-weight:800;'>⚠ Review Recommended</span>";
-      } else {
-        vivaReviewStatus.innerHTML = "<span style='color:var(--green); font-weight:850;'>✓ Clean</span>";
-      }
-
-      // Configure back to results dashboard link
-      // Wait, can we link back to the specific assessment's results page?
-      // Yes! Since we don't have the assessment ID directly in the endpoint,
-      // but the teacher dashboard list knows, let's keep dashboardBackBtn as going back to teacher dashboard
-      // or we can redirect to results page if we can retrieve the assessment_id.
-      // Wait! We can retrieve assessment details once we have it.
-      // Is there an assessment_id in attemptData?
-      // The API return structure: {"attempt": {"id": 1, "title": "Viva Title", "student": {...}, "answers": [...]}}
-      // It does not explicitly return assessment_id but we can go back to "/teacher" dashboard.
-      // That is completely fine and safe!
-    }
-
-    function renderQuestionReviewCards() {
-      if (answers.length === 0) {
-        questionsListContainer.innerHTML = `<div class="empty-state">No questions answered in this attempt yet.</div>`;
+    function renderAnswers(answers) {
+      if (!answers.length) {
+        answersListContainer.innerHTML = `<p style="color: var(--text-muted);">No answers submitted for this attempt.</p>`;
         return;
       }
 
-      questionsListContainer.innerHTML = answers.map((a, index) => {
-        const hasOverride = a.override_reason && a.override_reason.trim().length > 0;
-        const overrideTag = hasOverride ? `<span class="override-badge">Overridden</span>` : '';
-        
-        const evalObj = a.evaluation || {};
-        const covered = evalObj.covered_concepts || [];
-        const missing = evalObj.missing_concepts || [];
-
-        const coveredTags = covered.map(c => `<span class="keyword-tag" style="background:#e6f6f0; color:var(--green); border-color:#d0ecd8;">${escapeHtml(c)}</span>`).join("");
-        const missingTags = missing.map(c => `<span class="keyword-tag" style="background:#feebe8; color:var(--red); border-color:#fcc8c2;">${escapeHtml(c)}</span>`).join("");
+      answersListContainer.innerHTML = answers.map((ans, idx) => {
+        const evalObj = ans.evaluation || {};
+        const isOverridden = Boolean(ans.override_reason);
+        const dim = evalObj.dimension_scores;
 
         return `
-          <article class="question-review-card" id="card-${a.answer_id}">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h3 style="margin:0;">Q${index + 1}: ${escapeHtml(a.question)} ${overrideTag}</h3>
-              <span class="difficulty-badge" style="background:#eff8ff; color:var(--blue); text-transform:uppercase;">${a.marks} MARKS</span>
+          <div class="answer-review-card" id="answerCard-${ans.answer_id}">
+            <div class="panel-heading-spread" style="margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="badge badge-primary">Q${idx + 1}</span>
+                <span style="font-size: 15px; font-weight: 700; color: var(--text-primary);">${ans.question}</span>
+              </div>
+              <span class="badge badge-neutral" style="font-size: 13px; font-family: var(--font-mono);">${ans.final_score} / ${ans.marks} Marks</span>
             </div>
 
-            <!-- Student response -->
-            <div class="response-section">
-              <strong style="display:block; margin-bottom:4px; font-size:11px; color:var(--muted); text-transform:uppercase;">Student Response</strong>
-              <div>${escapeHtml(a.student_answer || "(No response submitted)")}</div>
-            </div>
-
-            <!-- Teacher Reference answer -->
-            <div class="response-section response-section-accepted">
-              <strong style="display:block; margin-bottom:4px; font-size:11px; color:var(--blue); text-transform:uppercase;">Instructor Reference Answer</strong>
-              <div>${escapeHtml(a.reference_answer || "(No reference answer provided)")}</div>
-            </div>
-
-            <!-- AI Evaluation detail -->
-            <div style="display: grid; gap: 8px;">
-              <div style="font-size:13px; line-height:1.5;">
-                <strong>AI Score Rationale:</strong> ${escapeHtml(evalObj.feedback || evalObj.rationale || "No explanation provided.")}
-              </div>
-              <div style="font-size:13px;">
-                <strong>Evaluation confidence:</strong> <span style="font-weight:750;">${evalObj.confidence || "medium"}</span>
-              </div>
-              <div style="margin-top: 4px;">
-                <strong style="font-size:11px; color:var(--muted); display:block; margin-bottom:4px; text-transform:uppercase;">AI Concepts Matched</strong>
-                <div class="keywords-row">${coveredTags || '<span style="font-size:12px; color:var(--muted)">None</span>'}</div>
-              </div>
-              <div style="margin-top: 4px;">
-                <strong style="font-size:11px; color:var(--muted); display:block; margin-bottom:4px; text-transform:uppercase;">Missing Elements</strong>
-                <div class="keywords-row">${missingTags || '<span style="font-size:12px; color:var(--muted)">None</span>'}</div>
+            <div style="margin: 14px 0;">
+              <label>Student Verbal / Text Response</label>
+              <div style="padding: 12px 14px; border-radius: var(--radius-sm); background: var(--surface-elevated); border: 1px solid var(--border); font-size: 13.5px; color: var(--text-primary); line-height: 1.5;">
+                ${ans.student_answer ? escapeHtml(ans.student_answer) : '<em style="color: var(--text-muted);">[Blank / No response submitted]</em>'}
               </div>
             </div>
 
-            <!-- Override form controls -->
-            <div class="override-form-group">
-              <label>
-                Assigned Grade Score
-                <input type="number" step="0.1" min="0" max="${a.marks}" id="override-score-${a.answer_id}" value="${a.final_score}" oninput="checkOverrideReasonRequired(${a.answer_id}, ${a.ai_score})">
-              </label>
-              <label>
-                Override Audit Reason <span id="reason-req-${a.answer_id}" style="color:var(--red); font-weight:750; display:none;">*required</span>
-                <input type="text" id="override-reason-${a.answer_id}" value="${escapeHtml(a.override_reason)}" placeholder="State why the marks were changed...">
-              </label>
-              <button class="button button-quiet" type="button" style="height:38px;" onclick="saveOverrideMark(${a.answer_id}, ${a.ai_score})">Save Grade</button>
-            </div>
-            <p id="override-status-${a.answer_id}" class="note-status" style="margin:0;"></p>
-
-            ${hasOverride ? `
-              <div style="font-size:11px; color:var(--muted); background:#fcfbff; border:1px solid #f3efff; padding:8px 12px; border-radius:6px;">
-                <strong>Audit trail:</strong> Original AI score: <strong>${a.ai_score}</strong>. Overridden because: <em>"${escapeHtml(a.override_reason)}"</em>
+            ${dim ? `
+              <div class="rubric-breakdown-grid" style="margin-bottom: 14px;">
+                <div class="rubric-meter-card">
+                  <div class="rubric-meter-header">
+                    <span>Precision (20%)</span>
+                    <span style="color: var(--primary);">${dim.precision} / ${dim.max_precision || (ans.marks*0.2)}</span>
+                  </div>
+                  <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.precision/(dim.max_precision||1))*100}%; background: var(--primary);"></div></div>
+                </div>
+                <div class="rubric-meter-card">
+                  <div class="rubric-meter-header">
+                    <span>Clarity (20%)</span>
+                    <span style="color: var(--secondary);">${dim.clarity} / ${dim.max_clarity || (ans.marks*0.2)}</span>
+                  </div>
+                  <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.clarity/(dim.max_clarity||1))*100}%; background: var(--secondary);"></div></div>
+                </div>
+                <div class="rubric-meter-card">
+                  <div class="rubric-meter-header">
+                    <span>Evidence (20%)</span>
+                    <span style="color: var(--accent-cyan);">${dim.evidence} / ${dim.max_evidence || (ans.marks*0.2)}</span>
+                  </div>
+                  <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.evidence/(dim.max_evidence||1))*100}%; background: var(--accent-cyan);"></div></div>
+                </div>
+                <div class="rubric-meter-card">
+                  <div class="rubric-meter-header">
+                    <span>Keywords (40%)</span>
+                    <span style="color: var(--success);">${dim.keywords} / ${dim.max_keywords || (ans.marks*0.4)}</span>
+                  </div>
+                  <div class="rubric-meter-track"><div class="rubric-meter-fill" style="width: ${(dim.keywords/(dim.max_keywords||1))*100}%; background: var(--success);"></div></div>
+                </div>
               </div>
             ` : ''}
-          </article>
+
+            <div style="background: var(--surface-elevated); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border); margin-bottom: 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <span class="eyebrow" style="margin-bottom: 0;">AI EVALUATION &amp; RUBRIC FEEDBACK</span>
+                <span style="font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--primary);">AI Score: ${ans.ai_score} / ${ans.marks}</span>
+              </div>
+              <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5;">${evalObj.feedback || "Pending evaluation."}</p>
+            </div>
+
+            <!-- Manual Override Tool -->
+            <div class="override-box">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                <strong style="font-size: 13px; color: var(--text-primary);">Manual Mark Override &amp; Grade Adjustment</strong>
+                ${isOverridden ? `<span class="badge badge-warning">Overridden: ${escapeHtml(ans.override_reason)}</span>` : ''}
+              </div>
+
+              <div class="field-row" style="margin-bottom: 10px;">
+                <div>
+                  <label style="font-size: 11.5px;">Final Score (Max: ${ans.marks})</label>
+                  <input type="number" id="mark-${ans.answer_id}" value="${ans.final_score}" min="0" max="${ans.marks}" step="0.5">
+                </div>
+                <div>
+                  <label style="font-size: 11.5px;">Teacher Audit Reason</label>
+                  <input type="text" id="reason-${ans.answer_id}" placeholder="e.g. Accurate verbal explanation of deadlock prevention" value="${escapeHtml(ans.override_reason || '')}">
+                </div>
+              </div>
+
+              <button type="button" class="button button-primary button-compact" onclick="saveOverride(${ans.answer_id})">
+                Save Mark Override ✓
+              </button>
+              <span id="overrideStatus-${ans.answer_id}" style="font-size: 12px; margin-left: 10px; font-weight: 600;"></span>
+            </div>
+          </div>
         `;
-      }).join("");
+      }).join('');
     }
 
-    // Toggle reason mandatory indicator if teacher changes the score from original AI score
-    window.checkOverrideReasonRequired = function(answerId, originalAiScore) {
-      const scoreInput = document.getElementById(`override-score-${answerId}`);
-      const reqIndicator = document.getElementById(`reason-req-${answerId}`);
-      if (!scoreInput || !reqIndicator) return;
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text || "";
+      return div.innerHTML;
+    }
 
-      const currentScore = parseFloat(scoreInput.value);
-      if (isNaN(currentScore)) return;
+    window.saveOverride = async function(answerId) {
+      const markInput = document.getElementById(`mark-${answerId}`);
+      const reasonInput = document.getElementById(`reason-${answerId}`);
+      const statusEl = document.getElementById(`overrideStatus-${answerId}`);
 
-      if (currentScore !== originalAiScore) {
-        reqIndicator.style.display = "inline";
-      } else {
-        reqIndicator.style.display = "none";
-      }
-    };
-
-    window.saveOverrideMark = async function(answerId, originalAiScore) {
-      const scoreInput = document.getElementById(`override-score-${answerId}`);
-      const reasonInput = document.getElementById(`override-reason-${answerId}`);
-      const statusText = document.getElementById(`override-status-${answerId}`);
-      
-      if (!scoreInput || !reasonInput || !statusText) return;
-
-      const newScore = parseFloat(scoreInput.value);
+      const mark = parseFloat(markInput.value);
       const reason = reasonInput.value.trim();
 
-      if (isNaN(newScore)) {
-        statusText.textContent = "Please enter a valid numeric grade.";
-        statusText.style.color = "var(--red)";
+      if (isNaN(mark)) {
+        statusEl.textContent = "Please enter a valid numeric mark.";
+        statusEl.style.color = "var(--danger)";
+        if (window.Toast) Toast.error("Enter a valid numeric mark.");
         return;
       }
 
-      // Check if reason is provided when marks are overridden
-      if (newScore !== originalAiScore && !reason) {
-        statusText.textContent = "An override audit reason is required to change marks.";
-        statusText.style.color = "var(--red)";
-        reasonInput.focus();
+      if (!reason) {
+        statusEl.textContent = "Please provide an audit reason for the mark change.";
+        statusEl.style.color = "var(--danger)";
+        if (window.Toast) Toast.warning("An audit reason is required for mark adjustments.");
         return;
       }
 
-      statusText.textContent = "Saving grade override...";
-      statusText.style.color = "var(--blue)";
+      statusEl.textContent = "Saving override...";
+      statusEl.style.color = "var(--primary)";
 
       try {
         const res = await fetch(`/api/teacher/answers/${answerId}/override`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            mark: newScore,
-            reason: reason || "Score confirmed by instructor" // Default if score matches AI
+            mark: mark,
+            reason: reason
           })
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Save override failed.");
 
-        statusText.textContent = "Grade override saved successfully!";
-        statusText.style.color = "var(--green)";
-        
-        // Reload details to update audit logs and header total
-        setTimeout(loadAttemptDetails, 1500);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Override failed");
+
+        statusEl.textContent = "Mark updated successfully! ✓";
+        statusEl.style.color = "var(--success)";
+        if (window.Toast) Toast.success("Mark override saved with audit reason.");
+        setTimeout(loadAttempt, 800);
       } catch (err) {
-        statusText.textContent = err.message;
-        statusText.style.color = "var(--red)";
+        statusEl.textContent = err.message;
+        statusEl.style.color = "var(--danger)";
+        if (window.Toast) Toast.error(err.message);
       }
     };
 
-    function calculateLiveTotals() {
-      let earned = 0;
-      let max = 0;
-      
-      answers.forEach(a => {
-        earned += a.final_score;
-        max += a.marks;
-      });
-
-      liveTotalDisplay.textContent = `${earned.toFixed(1)} / ${max}`;
-      const pct = max > 0 ? Math.round((earned / max) * 100) : 0;
-      gradePercentageDisplay.textContent = `${pct}% score`;
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    checkLogin();
+    document.addEventListener("DOMContentLoaded", loadAttempt);
   </script>
 </body>
 </html>

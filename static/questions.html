@@ -1,408 +1,422 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Personal AI preparation workspace. Upload materials, generate custom question sets, and practice.">
-  <title>Prep Workspace · viva.</title>
+  <meta name="description" content="Personal Practice Lab — Upload syllabus materials, generate oral viva questions, and evaluate your spoken answers with AI.">
+  <title>Practice Lab · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
+  <script src="/static/notes.js"></script>
   <style>
-    /* Premium dual panel styling for prep space */
-    .prep-grid {
+    .workspace-layout {
       display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      gap: 20px;
-      margin-top: 24px;
+      grid-template-columns: 390px 1fr;
+      gap: 24px;
     }
-    .file-dropzone {
-      border: 2px dashed var(--line-strong);
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      background: var(--canvas);
+
+    .ingestion-tabs {
+      display: flex;
+      background: var(--surface-elevated);
+      padding: 3px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 14px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .ingestion-tab-btn {
+      flex: 1;
+      padding: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      border: none;
+      background: transparent;
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: border-color 0.16s ease, background 0.16s ease;
+      transition: all var(--transition-fast);
     }
-    .file-dropzone:hover {
-      border-color: var(--blue);
-      background: var(--soft-blue);
+
+    .ingestion-tab-btn.active {
+      background: var(--primary);
+      color: #ffffff;
     }
-    .file-dropzone input[type="file"] {
-      display: none;
+
+    .dropzone-area {
+      border: 2px dashed var(--border-active);
+      border-radius: var(--radius-md);
+      padding: 22px 14px;
+      text-align: center;
+      background: var(--surface-elevated);
+      cursor: pointer;
+      transition: all var(--transition-fast);
     }
-    .material-list {
-      display: grid;
-      gap: 10px;
-      margin-top: 14px;
-      max-height: 220px;
-      overflow-y: auto;
+
+    .dropzone-area:hover, .dropzone-area.dragover {
+      border-color: var(--primary);
+      background: var(--primary-glow);
     }
+
     .material-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+    }
+
+    .question-stage-panel {
+      min-height: 600px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .feedback-hud {
+      margin-top: 24px;
+      padding: 22px;
+      border-radius: var(--radius-md);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      display: grid;
+      gap: 16px;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .score-banner {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 10px 14px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--canvas);
-      font-size: 13px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-subtle);
     }
-    .material-name {
-      font-weight: 650;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      max-width: 200px;
+
+    .score-meter {
+      font-family: var(--font-mono);
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--primary);
+    }
+
+    .concepts-grid {
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
       gap: 6px;
+      margin-top: 6px;
     }
-    .material-meta {
-      color: var(--muted);
+
+    .subject-pill {
       font-size: 11px;
-    }
-    .notes-list-editor {
-      margin-top: 18px;
-      display: grid;
-      gap: 12px;
-    }
-    .note-compose {
-      display: grid;
-      gap: 8px;
-    }
-    .note-compose textarea {
-      min-height: 90px;
-      font-size: 13px;
-    }
-    .note-saved-items {
-      display: grid;
-      gap: 8px;
-      max-height: 200px;
-      overflow-y: auto;
-    }
-    .note-item {
-      padding: 10px 12px;
-      border: 1px solid #ebe5ff;
-      border-radius: 8px;
-      background: #faf9ff;
-      font-size: 13px;
-      position: relative;
-    }
-    .note-item h4 {
-      margin: 0 0 4px 0;
-      color: var(--violet);
-      font-size: 12px;
-      font-weight: 750;
-    }
-    .note-item p {
-      margin: 0;
-      color: var(--ink-soft);
-      line-height: 1.45;
-    }
-    .note-item .delete-note-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: transparent;
-      border: none;
-      color: var(--red);
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 700;
+      font-weight: 600;
     }
-    .practice-setup-card {
-      display: grid;
-      gap: 16px;
+
+    .subject-pill:hover {
+      border-color: var(--primary);
+      color: var(--primary);
     }
-    .practice-stage {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      min-height: 400px;
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .score-badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 800;
-    }
-    .badge-correct { color: var(--green); background: #e6f6f0; }
-    .badge-partial { color: var(--amber); background: #fdf5e6; }
-    .badge-incorrect { color: var(--red); background: #feebe8; }
-    @media (max-width: 900px) {
-      .prep-grid {
-        grid-template-columns: 1fr;
-      }
+
+    @media (max-width: 960px) {
+      .workspace-layout { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
     <header class="topbar">
-      <a href="/" class="brand" aria-label="Viva home">
-        <span class="brand-mark" aria-hidden="true"><span></span><span></span><span></span></span>
-        <span>viva<span class="brand-dot">.</span></span>
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
       </a>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a class="nav-link" href="/student">Dashboard</a>
-        <a class="nav-link nav-link-active" href="/questions">Practice Library</a>
+
+      <nav class="nav-links" aria-label="Primary Navigation">
+        <a href="/student">Student Hub</a>
+        <a href="/questions" class="active">Practice Lab</a>
       </nav>
-      <div class="status-indicator">
-        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()" style="margin-right: 12px;">🌙 <span class="theme-btn-text">Dark</span></button>
-        <span class="status-dot"></span>
-        <span id="libraryStatus">AI Practice Connected</span>
+
+      <div class="topbar-actions">
+        <div id="weatherPill" class="weather-pill" style="display: none;"></div>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
       </div>
     </header>
 
-    <section class="library-hero" style="padding-top: 36px; padding-bottom: 20px;">
-      <p class="eyebrow">Personal Practice Workspace</p>
-      <h1 id="library-title" style="margin: 8px 0 10px;">Private Study<br><span>& AI Practice.</span></h1>
-      <p>Upload study notes, PDFs, or DOCX files and generate tailored practice question sessions. Practice answering in the browser with meaning-based semantic evaluation.</p>
-    </section>
-
-    <!-- AI Model Settings Panel -->
-    <details class="ai-settings" style="margin-bottom: 18px;">
-      <summary>
-        <span class="settings-icon">🤖</span>
-        AI Model Settings (Local LLM / Cloud API)
-        <span class="summary-helper">▾</span>
-      </summary>
-      <div class="ai-settings-content">
-        <!-- Hidden trap inputs to prevent browser password managers from autofilling saved email/password into model name/API key -->
-        <div style="position: absolute; top: -9999px; left: -9999px; width: 1px; height: 1px; overflow: hidden;" aria-hidden="true">
-          <input type="text" name="fake_username_trap" tabindex="-1" autocomplete="username">
-          <input type="password" name="fake_password_trap" tabindex="-1" autocomplete="current-password">
-        </div>
-        <p>Configure a local AI model (Ollama `http://localhost:11434/v1`, LM Studio) for fast local practice, or enter a Cloud API key (OpenAI / Gemini).</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 10px;" class="ai-config-grid">
-          <label>
-            Local Model Base URL
-            <input id="baseUrlInput" name="no_autofill_base_url" type="text" placeholder="http://localhost:11434/v1" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
-          </label>
-          <label>
-            Local Model Name
-            <input id="modelNameInput" name="no_autofill_model_name" type="text" placeholder="qwen2.5-coder:3b" autocomplete="off" aria-autocomplete="none" data-lpignore="true" data-form-type="other" spellcheck="false">
-          </label>
-          <label>
-            Cloud API Key (Optional)
-            <div style="display: flex; gap: 6px;">
-              <input id="apiKeyInput" name="no_autofill_api_key" type="password" placeholder="sk-... or AIza..." autocomplete="new-password" data-lpignore="true" data-form-type="other" spellcheck="false">
-              <button id="toggleKeyBtn" class="button button-quiet button-compact" type="button" style="height:38px;">Show</button>
-            </div>
-          </label>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 650;">
-            <span id="apiDot" style="width:8px; height:8px; border-radius:50%; background:var(--muted); box-shadow:0 0 0 3px #e9edf3; flex-shrink:0;"></span>
-            <span id="apiStatusText" style="color:var(--muted);">No custom AI settings configured.</span>
-          </div>
-          <button id="saveKeyBtn" class="button button-primary button-compact" type="button">Save AI Settings</button>
-        </div>
-      </div>
-    </details>
-
-    <!-- ⏱️ Pro Focus & Study Productivity Suite -->
-    <details class="ai-settings" style="margin-bottom: 18px;" open>
-      <summary style="font-weight:750;">
-        <span class="settings-icon">⏱️</span>
-        Study Focus Suite (Pomodoro & Custom Timer)
-        <span class="timer-mode-badge mode-focus" style="margin-left:auto; margin-right:12px;">🎯 Focus Session</span>
-      </summary>
-      <div style="padding: 16px;">
-        <div class="timer-goal-box" style="margin-bottom:12px;">
-          <input type="text" id="focusGoalInput" placeholder="🎯 Current Session Goal (e.g. Chapter 4 Data Structures)" spellcheck="false">
-        </div>
-
-        <div class="timer-display" style="margin-bottom:12px;">
-          <div class="timer-display-time">25:00</div>
-          <div class="timer-progress-track">
-            <div class="timer-progress-fill"></div>
-          </div>
-        </div>
-
-        <div class="timer-presets" style="margin-bottom:12px;">
-          <button class="timer-preset-btn active-preset" data-minutes="25" onclick="setPresetTimer(25)">25m Pomodoro</button>
-          <button class="timer-preset-btn" data-minutes="50" onclick="setPresetTimer(50)">50m Deep Focus</button>
-          <button class="timer-preset-btn" data-minutes="5" onclick="setPresetTimer(5)">5m Short Break</button>
-          <button class="timer-preset-btn" data-minutes="15" onclick="setPresetTimer(15)">15m Long Break</button>
-        </div>
-
-        <div class="custom-timer-box" style="margin-bottom:12px;">
-          <input type="number" id="customTimerInputLib" placeholder="Custom minutes (e.g. 10, 30, 90)" min="1" max="300">
-          <button class="button button-quiet button-compact" type="button" onclick="setCustomTimer(document.getElementById('customTimerInputLib').value)">Set Custom</button>
-        </div>
-
-        <div class="timer-controls">
-          <button class="button button-primary timer-start-btn" type="button" onclick="startFocusTimer()">▶ Start Session</button>
-          <button class="button button-quiet timer-pause-btn" type="button" style="display:none;" onclick="pauseFocusTimer()">⏸ Pause</button>
-          <button class="button button-quiet" type="button" onclick="resetFocusTimer()">🔄 Reset</button>
-        </div>
-
-        <div class="timer-analytics-bar">
-          <span>📊</span>
-          <span class="timer-analytics-text">0 sessions completed today (0 mins total)</span>
-        </div>
-      </div>
-    </details>
-
-    <div class="prep-grid">
-      <!-- Left Column: Study Materials & Private Notes -->
-      <section class="panel study-materials-panel">
-        <div class="panel-heading">
-          <span class="step-label">Files</span>
-          <div>
-            <p class="eyebrow">Workspace context</p>
-            <h2>My Study Material</h2>
-          </div>
-        </div>
-
-        <div class="file-dropzone" id="dropzone">
-          <span class="settings-icon">✦</span>
-          <p style="margin: 8px 0 4px; font-weight: 700; font-size: 13px;">Upload study files</p>
-          <p style="margin: 0; font-size: 11px; color: var(--muted);">Supports PDF, DOCX, TXT, MD up to 8MB</p>
-          <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md">
-        </div>
-        <p id="uploadStatus" class="api-status" style="margin-top: 8px; font-size:12px;"></p>
-
-        <div class="material-list" id="materialList">
-          <div class="empty-state" style="min-height: 80px; padding: 16px; font-size:12px;">No study files uploaded yet.</div>
-        </div>
-
-        <div class="notes-list-editor">
-          <div class="panel-heading" style="margin-top: 14px; margin-bottom: 6px;">
-            <span class="step-label">Notes</span>
-            <div>
-              <p class="eyebrow">Quick recall</p>
-              <h2>My Private Notes</h2>
-            </div>
-          </div>
-
-          <div class="note-compose">
-            <textarea id="noteText" placeholder="Add study notes, bullet points, or concepts to guide your practice..."></textarea>
-            <button id="saveNoteBtn" class="button button-quiet button-compact" type="button">Add Study Note</button>
-          </div>
-
-          <div class="note-saved-items" id="noteSavedItems">
-            <!-- Saved notes rendered here -->
-          </div>
-        </div>
-      </section>
-
-      <!-- Right Column: Question Generation & Live Practice -->
-      <section class="panel practice-panel" id="practicePanel">
-        <!-- Configuration Card (Visible before start) -->
-        <div id="setupView" class="practice-setup-card">
+    <div class="workspace-layout">
+      <!-- Left Column: Study Ingestion & Generator Parameters -->
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <!-- Ingestion Panel -->
+        <section class="panel">
           <div class="panel-heading">
-            <span class="step-label">Prep</span>
+            <span class="step-label">01</span>
             <div>
-              <p class="eyebrow">Generator configuration</p>
-              <h2>AI Practice Engine</h2>
+              <p class="eyebrow">Study Ingestion</p>
+              <h2>Upload Syllabus Notes</h2>
             </div>
           </div>
-          <p style="font-size: 13px; color: var(--ink-soft); line-height: 1.5;">Choose a challenge difficulty and the number of questions. Questions will be generated strictly from your uploaded materials above.</p>
 
-          <label>
-            Challenge Level
-            <select id="practiceLevel">
-              <option value="easy">Easy (Definitions & Basic Concepts)</option>
-              <option value="medium" selected>Medium (Explanations & Context)</option>
-              <option value="hard">Hard (Limitations, Tradeoffs & Depth)</option>
-            </select>
-          </label>
-
-          <label>
-            Number of Questions
-            <select id="practiceCount">
-              <option value="5">5 Questions</option>
-              <option value="10">10 Questions</option>
-              <option value="20">20 Questions</option>
-              <option value="30">30 Questions</option>
-              <option value="custom">Custom count...</option>
-            </select>
-          </label>
-
-          <div id="customCountWrapper" style="display: none;">
-            <label>
-              Custom question count (Max 50)
-              <input id="customCountInput" type="number" min="1" max="50" value="15">
-            </label>
+          <div class="ingestion-tabs">
+            <button type="button" class="ingestion-tab-btn active" id="tabUploadFile" onclick="setIngestionMode('file')">📁 Upload File</button>
+            <button type="button" class="ingestion-tab-btn" id="tabPasteText" onclick="setIngestionMode('paste')">📋 Paste Notes Directly</button>
           </div>
 
-          <button id="generateBtn" class="button button-primary button-full" type="button">Generate Practice Session <span aria-hidden="true">→</span></button>
-          <p id="practiceError" class="validation" style="margin: 0; min-height: auto;"></p>
+          <!-- File Upload Mode -->
+          <div id="ingestionFileView">
+            <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md,.csv,.py,.json,.c,.cpp,.java,.js,.ts" style="display:none;">
+            <div class="dropzone-area" id="dropzone" onclick="document.getElementById('fileInput').click()">
+              <div style="font-size: 28px; margin-bottom: 6px;">📄</div>
+              <p style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Click or drag syllabus file</p>
+              <p style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">Fast PDF, DOCX, TXT, Markdown, Code</p>
+            </div>
+          </div>
+
+          <!-- Paste Raw Notes Mode -->
+          <div id="ingestionPasteView" style="display: none;">
+            <label for="pasteTitleInput" style="font-size: 11.5px;">Topic / Note Title</label>
+            <input type="text" id="pasteTitleInput" placeholder="e.g. Unit 3 — Virtual Memory &amp; Paging" style="margin-bottom: 8px;">
+            <label for="pasteTextInput" style="font-size: 11.5px;">Syllabus / Lecture Notes Content</label>
+            <textarea id="pasteTextInput" placeholder="Paste your lecture notes, syllabus concepts, or slide transcripts here..." style="min-height: 110px; font-size: 12.5px; margin-bottom: 8px;"></textarea>
+            <button type="button" id="savePastedNotesBtn" class="button button-primary button-compact" style="width: 100%; justify-content: center;" onclick="handleSavePastedNotes()">
+              Save &amp; Ingest Notes ⚡
+            </button>
+          </div>
+
+          <div id="uploadStatus" style="font-size: 12px; margin-top: 10px; font-family: var(--font-mono);"></div>
+
+          <div style="margin-top: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="margin-bottom: 0;">Uploaded Materials</label>
+              <span id="materialCountBadge" style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted);">0 files</span>
+            </div>
+            <div id="materialList" style="max-height: 180px; overflow-y: auto;">
+              <p style="font-size: 12.5px; color: var(--text-muted); font-style: italic;">No documents uploaded yet.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Generation Settings Panel -->
+        <section class="panel">
+          <div class="panel-heading">
+            <span class="step-label">02</span>
+            <div>
+              <p class="eyebrow">Viva Parameters</p>
+              <h2>Question Generator</h2>
+            </div>
+          </div>
+
+          <div style="display: grid; gap: 14px;">
+            <div>
+              <label for="practiceSubject">Subject / Topic Name</label>
+              <input type="text" id="practiceSubject" placeholder="e.g. Operating Systems / Python" value="Computer Science">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;">
+                <span class="subject-pill" onclick="setSubject('Computer Science')">Computer Science</span>
+                <span class="subject-pill" onclick="setSubject('Operating Systems')">OS</span>
+                <span class="subject-pill" onclick="setSubject('Python')">Python</span>
+                <span class="subject-pill" onclick="setSubject('DBMS')">DBMS</span>
+                <span class="subject-pill" onclick="setSubject('AI Basics')">AI Basics</span>
+                <span class="subject-pill" onclick="setSubject('Web Development')">Web Dev</span>
+              </div>
+            </div>
+
+            <div class="field-row">
+              <div>
+                <label for="practiceLevel">Difficulty Level</label>
+                <select id="practiceLevel">
+                  <option value="easy">Easy (Definitions &amp; Syntax)</option>
+                  <option value="medium" selected>Medium (Standard Viva)</option>
+                  <option value="hard">Hard (Tradeoffs &amp; Edge-Cases)</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="practiceCount">Question Count</label>
+                <select id="practiceCount">
+                  <option value="3">3 Questions</option>
+                  <option value="5" selected>5 Questions</option>
+                  <option value="10">10 Questions</option>
+                  <option value="custom">Custom...</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="customCountWrapper" style="display: none;">
+              <label for="customCountInput">Custom Question Count</label>
+              <input type="number" id="customCountInput" min="1" max="30" value="7">
+            </div>
+
+            <button type="button" id="generateBtn" class="button button-primary" style="width: 100%; justify-content: center;">
+              Generate AI Viva Questions ⚡
+            </button>
+
+            <div id="practiceError" style="color: var(--danger); font-size: 12.5px; font-weight: 600;"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Interactive Practice Stage & Feedback HUD -->
+      <section class="panel question-stage-panel">
+        <!-- Initial Blank State -->
+        <div id="setupPromptState" style="text-align: center; margin: auto; padding: 40px 20px;">
+          <div style="font-size: 52px; margin-bottom: 14px;">🎙️</div>
+          <h2>Interactive AI Viva Stage</h2>
+          <p style="max-width: 500px; margin: 10px auto 24px; color: var(--text-secondary); line-height: 1.5;">
+            Upload your syllabus notes on the left or select a subject, then click generate to begin a realistic oral defense simulation with examiner voice read-aloud and 4-dimension rubric scoring.
+          </p>
+          <div style="display: flex; justify-content: center; gap: 8px; flex-wrap: wrap;">
+            <span class="badge badge-primary">🎙️ Oral Voice Dictation</span>
+            <span class="badge badge-secondary">🔊 AI Examiner Read-Aloud</span>
+            <span class="badge badge-success">🎯 4-Dimension Rubrics</span>
+          </div>
         </div>
 
-        <!-- Interactive Practice Flow (Visible after start) -->
-        <div id="practiceView" class="practice-stage" style="display: none;">
-          <div class="panel-heading panel-heading-spread" style="margin-bottom: 0;">
-            <div class="panel-heading-left">
-              <span class="step-label">Prep</span>
+        <!-- Active Question State (Hidden Initially) -->
+        <div id="activePracticeState" style="display: none; flex-direction: column; flex-grow: 1;">
+          <div class="panel-heading-spread">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="badge badge-primary" id="practiceProgressBadge">Question 1 of 5</span>
+              <span class="badge badge-neutral" id="practiceDifficultyBadge">Medium</span>
+              <button type="button" id="starQuestionBtn" class="button button-quiet button-compact" title="Star this question for study vault">
+                ⭐ Star Question
+              </button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="readQuestionBtn" class="button button-secondary button-compact" title="Read question aloud">
+                🔊 Read Aloud
+              </button>
+              <button type="button" id="exitPracticeBtn" class="button button-quiet button-compact">Exit ✕</button>
+            </div>
+          </div>
+
+          <div class="progress-area" style="margin: 8px 0 16px;">
+            <div class="progress-track"><div id="practiceProgressBar" class="progress-bar" style="width: 20%;"></div></div>
+          </div>
+
+          <!-- Question Display Card -->
+          <div style="background: var(--surface-elevated); padding: 18px 20px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <p class="eyebrow" style="margin-bottom: 0;">EXAMINER QUESTION</p>
+            </div>
+            <h3 id="practiceQuestionText" style="font-size: 18.5px; line-height: 1.45; color: var(--text-primary);">
+              Loading question...
+            </h3>
+          </div>
+
+          <!-- Voice & Verbal Input Area -->
+          <div class="voice-input-wrapper" style="flex-grow: 1; margin-bottom: 14px;">
+            <label for="practiceAnswer" style="display: flex; justify-content: space-between;">
+              <span>Your Technical Viva Oral Response</span>
+              <span id="practiceWordCount" style="font-family: var(--font-mono); color: var(--text-muted);">0 words</span>
+            </label>
+            <textarea id="practiceAnswer" placeholder="Type your response or click 'Speak Answer' below to dictate verbally via microphone..."></textarea>
+            <button type="button" id="voiceDictationBtn" class="voice-dictation-btn" data-target="practiceAnswer">
+              🎙️ <span class="btn-text">Speak Answer</span>
+            </button>
+          </div>
+
+          <!-- Evaluation Action Buttons -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span id="evaluationStatus" style="font-size: 12.5px; font-weight: 700;"></span>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" id="submitAnswerBtn" class="button button-primary">Submit for AI Evaluation ✓</button>
+              <button type="button" id="nextPracticeBtn" class="button button-secondary" style="display: none;">Next Question →</button>
+            </div>
+          </div>
+
+          <!-- Feedback HUD -->
+          <div id="practiceFeedback" class="feedback-hud" style="display: none;">
+            <div class="score-banner">
               <div>
-                <p class="eyebrow" id="practiceProgress">Question 1 of 5</p>
-                <h2 id="practiceBadge">Live practice</h2>
+                <p class="eyebrow" style="margin-bottom: 2px;">EXAMINER EVALUATION</p>
+                <h4 id="feedbackReadiness" style="font-size: 18px; color: var(--text-primary);">Readiness: Excellent Mastery</h4>
+              </div>
+              <div class="score-meter" id="feedbackScoreBadge">85 / 100</div>
+            </div>
+
+            <!-- 4-Dimension Rubric Breakdown Grid -->
+            <div>
+              <p class="eyebrow">4-DIMENSION RUBRIC BREAKDOWN</p>
+              <div class="rubric-breakdown-grid" id="rubricMetersContainer">
+                <!-- Injected dynamically -->
               </div>
             </div>
-            <button id="exitPracticeBtn" class="button button-quiet button-compact" type="button">Exit session</button>
-          </div>
 
-          <div class="progress-area" style="margin: 14px 0;">
-            <div class="progress-track" role="progressbar"><span id="practiceProgressBar" style="width: 0%;"></span></div>
-          </div>
+            <div>
+              <strong style="font-size: 13px; color: var(--text-primary);">Detailed Constructive Rubric Analysis</strong>
+              <p id="feedbackExplanation" style="font-size: 13.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.55;"></p>
+            </div>
 
-          <div class="question-stage">
-            <p id="practiceQuestionText" class="question-text">Loading practice question...</p>
-          </div>
-
-          <label class="answer-label" for="practiceAnswer">
-            Your Response
-            <span id="practiceWordCount">0 words</span>
-          </label>
-          <textarea id="practiceAnswer" placeholder="Explain the concept clearly as if answering to a professor..."></textarea>
-
-          <div class="action-row" style="margin-top: 10px;">
-            <button id="submitAnswerBtn" class="button button-primary" type="button">Submit & Evaluate <span aria-hidden="true">→</span></button>
-            <button id="nextPracticeBtn" class="button button-quiet" type="button" style="display: none;">Next Question <span aria-hidden="true">→</span></button>
-          </div>
-          <p id="evaluationStatus" class="validation" style="margin: 0; min-height: auto; color: var(--blue);"></p>
-
-          <!-- Evaluation Results -->
-          <div id="practiceFeedback" style="display: none; margin-top: 14px; display: grid; gap: 12px;">
-            <article class="feedback-card">
-              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <h3 style="margin:0;">Semantic Score</h3>
-                <span id="feedbackScoreBadge" class="score-badge">90/100</span>
+            <div class="field-row">
+              <div>
+                <label>Key Concepts Covered</label>
+                <div id="feedbackCovered" class="concepts-grid"></div>
               </div>
-              <p id="feedbackExplanation" style="font-size:13px; line-height:1.5;"></p>
-            </article>
-
-            <article class="feedback-card">
-              <h3 style="margin:0 0 6px 0; font-size:13px;">Key Concepts Covered</h3>
-              <div class="keywords-row" id="feedbackCovered">
-                <!-- tags -->
+              <div>
+                <label>Missing Concepts &amp; Gaps</label>
+                <div id="feedbackMissing" class="concepts-grid"></div>
               </div>
-            </article>
+            </div>
 
-            <article class="feedback-card">
-              <h3 style="margin:0 0 6px 0; font-size:13px;">Missing / Incorrect Concepts</h3>
-              <div class="keywords-row" id="feedbackMissing">
-                <!-- tags -->
+            <div style="background: var(--surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+              <label style="color: var(--primary);">Suggested Model Viva Answer</label>
+              <p id="feedbackModelAnswer" style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 4px;"></p>
+            </div>
+
+            <!-- Personal Question Note -->
+            <div style="background: var(--surface); padding: 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-active);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin-bottom: 0; color: var(--text-primary);">📝 Personal Study Note for this Question</label>
+                <span id="noteSavedBadge" style="font-size: 11px; font-family: var(--font-mono); color: var(--success); display: none;">✓ Note Saved</span>
               </div>
-            </article>
+              <textarea id="questionNoteInput" placeholder="Jot down personal takeaways, mnemonics, or formulas to remember..." style="min-height: 70px;"></textarea>
+            </div>
+          </div>
+        </div>
 
-            <article class="feedback-card">
-              <h3 style="margin:0 0 6px 0; font-size:13px;">Stronger Suggested Answer</h3>
-              <p id="feedbackModelAnswer" style="font-size:13px; line-height:1.5; font-style:italic;"></p>
-            </article>
+        <!-- Session Completion Summary (Hidden Initially) -->
+        <div id="sessionSummaryState" style="display: none; text-align: center; margin: auto; padding: 30px 20px;">
+          <div style="font-size: 52px; margin-bottom: 12px;">🎉</div>
+          <span class="eyebrow">PRACTICE COMPLETED</span>
+          <h2 style="font-size: 26px; margin: 4px 0 8px;">Viva Practice Session Complete!</h2>
+          <p style="font-size: 14px; color: var(--text-secondary); max-width: 520px; margin: 0 auto 20px;">
+            You have answered and evaluated all questions in this session set.
+          </p>
+
+          <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 24px; flex-wrap: wrap;">
+            <div style="padding: 14px 20px; background: var(--surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border);">
+              <span class="eyebrow">AVERAGE SCORE</span>
+              <div id="summaryAvgScore" style="font-family: var(--font-mono); font-size: 26px; font-weight: 800; color: var(--primary);">0%</div>
+            </div>
+            <div style="padding: 14px 20px; background: var(--surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border);">
+              <span class="eyebrow">QUESTIONS COMPLETED</span>
+              <div id="summaryQCount" style="font-family: var(--font-mono); font-size: 26px; font-weight: 800; color: var(--text-primary);">0</div>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+            <button type="button" class="button button-primary" onclick="exportPracticeStudyGuide()">
+              📥 Export Study Report (.md)
+            </button>
+            <button type="button" class="button button-secondary" onclick="window.location.reload()">
+              Start New Session ↺
+            </button>
           </div>
         </div>
       </section>
     </div>
   </main>
 
+  <script src="/static/focus-tools.js"></script>
   <script src="/static/questions.js"></script>
-  <script src="/static/focus-timer.js"></script>
 </body>
 </html>

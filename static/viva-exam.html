@@ -1,383 +1,340 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Take your assigned viva assessment.">
-  <title>Assigned Viva Exam · viva.</title>
+  <meta name="description" content="Proctored Viva Examination Stage — Oral response recording and answer submission.">
+  <title>Viva Examination Stage · Viva Simulator</title>
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
+  <script src="/static/toast.js"></script>
   <style>
-    .exam-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 20px;
-      background: var(--navy);
-      color: #fff;
-      border-radius: 14px;
-      margin-bottom: 20px;
-    }
-    .exam-timer {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 20px;
-      font-weight: 800;
-      color: #8fc7ff;
-      background: rgba(255, 255, 255, 0.08);
-      padding: 6px 14px;
-      border-radius: 9px;
-    }
-    .question-panel {
-      min-height: 480px;
+    .exam-stage {
+      max-width: 920px;
+      margin: 0 auto;
       display: flex;
       flex-direction: column;
+      min-height: calc(100vh - 100px);
     }
-    .exam-navigation {
+
+    .exam-question-card {
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+
+    .stepper-nav {
       display: flex;
-      justify-content: space-between;
-      margin-top: auto;
-      padding-top: 20px;
-      border-top: 1px solid var(--line);
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 16px 0;
     }
-    .btn-save-indicator {
-      font-size: 12px;
-      color: var(--muted);
-      margin-left: 10px;
-      display: inline-flex;
+
+    .step-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--surface-elevated);
+      border: 1px solid var(--border);
+      display: flex;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .step-dot.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .step-dot.completed {
+      border-color: var(--success);
+      color: var(--success);
     }
   </style>
 </head>
 <body>
   <main class="app-shell">
-    <div class="exam-header">
-      <div>
-        <p class="eyebrow" style="color: #8fc7ff;" id="studentInfo">Student Attempt</p>
-        <h2 style="color:#fff; margin:0; font-size: 20px; letter-spacing: -0.02em;" id="examTitle">Loading Viva...</h2>
+    <header class="topbar">
+      <a href="/" class="brand" aria-label="Viva Simulator Home">
+        <span class="brand-mark" aria-hidden="true"><span></span></span>
+        <span>viva<span class="brand-dot">-simulator</span></span>
+      </a>
+
+      <!-- Synchronized Countdown Timer HUD -->
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span class="eyebrow" style="margin-bottom: 0;">TIME REMAINING:</span>
+        <div id="examCountdown" style="font-family: var(--font-mono); font-size: 20px; font-weight: 900; color: var(--primary);">20:00</div>
       </div>
-      <div style="display: flex; align-items: center; gap: 14px;">
-        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">🌙 <span class="theme-btn-text">Dark</span></button>
-        <div class="exam-timer" id="timerWrapper" style="display:none;">
-          <span class="settings-icon">⏳</span>
-          <span id="timerDisplay">00:00</span>
+
+      <div class="topbar-actions">
+        <button type="button" id="finishExamBtn" class="button button-danger button-compact" onclick="confirmFinishExam()">
+          Finish &amp; Submit Exam ✓
+        </button>
+        <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
+      </div>
+    </header>
+
+    <div class="exam-stage">
+      <div class="panel-heading-spread" style="margin: 16px 0 10px;">
+        <div>
+          <p class="eyebrow" id="examSubjectBadge">SUBJECT VIVA</p>
+          <h1 id="examTitle" style="font-size: 22px;">Oral Examination HUD</h1>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span id="studentIdentity" class="badge badge-neutral">Student</span>
+          <button type="button" id="readExamQBtn" class="button button-secondary button-compact" onclick="readActiveQuestion()">
+            🔊 Read Aloud
+          </button>
         </div>
       </div>
-    </div>
 
-    <section class="panel question-panel">
-      <div class="panel-heading panel-heading-spread">
-        <div class="panel-heading-left">
-          <span class="step-label" id="questionPositionLabel">Q1</span>
-          <div>
-            <p class="eyebrow" id="subjectKicker">VIVA ASSESSMENT</p>
-            <h2 id="questionHeading">Question text</h2>
+      <!-- Question Stepper Dots -->
+      <div class="stepper-nav" id="questionStepper">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Active Question Box -->
+      <section class="panel" style="flex-grow: 1; display: flex; flex-direction: column;">
+        <div class="exam-question-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span class="eyebrow" id="currentQuestionLabel">QUESTION 1</span>
+            <span id="currentQuestionMarks" class="badge badge-primary">10 Marks</span>
+          </div>
+          <h2 id="currentQuestionPrompt" style="font-size: 20px; line-height: 1.45; color: var(--text-primary);">
+            Loading question...
+          </h2>
+        </div>
+
+        <!-- Oral Speech / Textarea Input -->
+        <div class="voice-input-wrapper" style="flex-grow: 1; margin-bottom: 16px;">
+          <label for="examAnswerInput" style="display: flex; justify-content: space-between;">
+            <span>Your Technical Oral Defense Response</span>
+            <span id="examWordCount" style="font-family: var(--font-mono); color: var(--text-muted);">0 words</span>
+          </label>
+          <textarea id="examAnswerInput" placeholder="Speak your answer aloud via microphone or type your technical response here..."></textarea>
+          <button type="button" id="voiceDictationBtn" class="voice-dictation-btn" data-target="examAnswerInput">
+            🎙️ <span class="btn-text">Speak Answer</span>
+          </button>
+        </div>
+
+        <!-- Navigation & Save Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <span id="autoSaveIndicator" style="font-size: 12px; font-family: var(--font-mono); color: var(--text-muted);">Draft auto-saved</span>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" id="prevQBtn" class="button button-quiet" onclick="navigateQuestion(-1)">← Previous</button>
+            <button type="button" id="nextQBtn" class="button button-primary" onclick="navigateQuestion(1)">Next Question →</button>
           </div>
         </div>
-        <span id="marksBadge" class="difficulty-badge" style="background:#eff8ff; color:var(--blue);">10 marks</span>
-      </div>
-
-      <div class="progress-area" style="margin: 18px 0;">
-        <div class="progress-label">
-          <span id="progressText">Question 1 of 5</span>
-          <span id="progressPctText">20% complete</span>
-        </div>
-        <div class="progress-track" role="progressbar"><span id="examProgressBar" style="width: 20%;"></span></div>
-      </div>
-
-      <div class="question-stage" style="margin-bottom: 20px; min-height: 100px;">
-        <p id="examQuestionText" class="question-text">Loading question text...</p>
-      </div>
-
-      <label class="answer-label" for="examAnswer">
-        Your Response
-        <span id="examWordCount">0 words</span>
-      </label>
-      <textarea id="examAnswer" placeholder="Type your response here. Ensure you address the core concepts of the question."></textarea>
-
-      <div class="exam-navigation">
-        <div>
-          <button id="prevBtn" class="button button-quiet" type="button" disabled>← Previous</button>
-        </div>
-        <div style="display: flex; align-items: center;">
-          <span id="saveIndicator" class="btn-save-indicator"></span>
-          <button id="nextBtn" class="button button-primary" type="button" style="margin-left: 12px;">Next →</button>
-          <button id="submitExamBtn" class="button button-primary" type="button" style="margin-left: 12px; display: none; background:var(--green); box-shadow:none;">Submit Assessment ✓</button>
-        </div>
-      </div>
-    </section>
+      </section>
+    </div>
   </main>
 
+  <script src="/static/focus-tools.js"></script>
   <script>
-    // URL format: /viva/abc123token/exam?attempt=attemptToken
     const urlParams = new URLSearchParams(window.location.search);
     const attemptToken = urlParams.get("attempt");
-    const shareToken = window.location.pathname.split('/')[2];
 
     const examTitle = document.getElementById("examTitle");
-    const studentInfo = document.getElementById("studentInfo");
-    const timerWrapper = document.getElementById("timerWrapper");
-    const timerDisplay = document.getElementById("timerDisplay");
-    
-    const questionPositionLabel = document.getElementById("questionPositionLabel");
-    const subjectKicker = document.getElementById("subjectKicker");
-    const questionHeading = document.getElementById("questionHeading");
-    const marksBadge = document.getElementById("marksBadge");
-    
-    const progressText = document.getElementById("progressText");
-    const progressPctText = document.getElementById("progressPctText");
-    const examProgressBar = document.getElementById("examProgressBar");
-    const examQuestionText = document.getElementById("examQuestionText");
-    
-    const examAnswer = document.getElementById("examAnswer");
+    const examSubjectBadge = document.getElementById("examSubjectBadge");
+    const studentIdentity = document.getElementById("studentIdentity");
+    const questionStepper = document.getElementById("questionStepper");
+    const currentQuestionLabel = document.getElementById("currentQuestionLabel");
+    const currentQuestionMarks = document.getElementById("currentQuestionMarks");
+    const currentQuestionPrompt = document.getElementById("currentQuestionPrompt");
+    const examAnswerInput = document.getElementById("examAnswerInput");
     const examWordCount = document.getElementById("examWordCount");
-    const prevBtn = document.getElementById("prevBtn");
-    const nextBtn = document.getElementById("nextBtn");
-    const submitExamBtn = document.getElementById("submitExamBtn");
-    const saveIndicator = document.getElementById("saveIndicator");
+    const autoSaveIndicator = document.getElementById("autoSaveIndicator");
+    const prevQBtn = document.getElementById("prevQBtn");
+    const nextQBtn = document.getElementById("nextQBtn");
+    const examCountdown = document.getElementById("examCountdown");
+    const readExamQBtn = document.getElementById("readExamQBtn");
 
-    let attemptData = null;
     let questions = [];
     let currentIdx = 0;
-    let answersState = {}; // questionId -> answer text
+    let autoSaveTimer = null;
     let countdownInterval = null;
 
-    async function loadAttempt() {
+    async function loadExam() {
+      if (!attemptToken) {
+        if (window.Toast) Toast.error("Missing attempt access token.");
+        setTimeout(() => { window.location.href = "/"; }, 1500);
+        return;
+      }
+
       try {
         const res = await fetch(`/api/public/attempts/${attemptToken}`);
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.error || "Failed to load exam state.");
-        }
+        if (!res.ok) throw new Error("Attempt not found or invalid");
         const data = await res.json();
-        attemptData = data.attempt;
-        questions = attemptData.questions || [];
-        
-        // Load existing answers
-        questions.forEach(q => {
-          if (q.answer) answersState[q.id] = q.answer;
-        });
+        const a = data.attempt;
 
-        renderExamHeader();
-        renderQuestion();
-        setupTimer();
+        if (a.state === "submitted") {
+          window.location.href = `/viva/complete?attempt=${attemptToken}`;
+          return;
+        }
+
+        examTitle.textContent = a.title;
+        examSubjectBadge.textContent = (a.subject || "VIVA").toUpperCase();
+        studentIdentity.textContent = a.student.name || "Student Attempt";
+
+        questions = a.questions || [];
+        renderStepper();
+        showQuestion(0);
+
+        // Persistent timer sync
+        const remainingSecs = a.remaining_seconds !== undefined ? a.remaining_seconds : (a.duration_minutes * 60);
+        startTimer(remainingSecs);
       } catch (err) {
-        alert(err.message || "Could not retrieve exam workspace. Redirecting home.");
-        window.location.href = "/";
+        if (window.Toast) Toast.error(err.message);
       }
     }
 
-    function renderExamHeader() {
-      examTitle.textContent = attemptData.title;
-      subjectKicker.textContent = attemptData.subject.toUpperCase();
-      
-      const s = attemptData.student;
-      studentInfo.textContent = `${s.name || "Student"} (${s.roll_no || "N/A"})`;
+    function renderStepper() {
+      questionStepper.innerHTML = questions.map((q, idx) => `
+        <div class="step-dot ${idx === currentIdx ? 'active' : ''} ${q.answer ? 'completed' : ''}" onclick="showQuestion(${idx})">
+          ${idx + 1}
+        </div>
+      `).join('');
     }
 
-    function renderQuestion() {
-      if (questions.length === 0) return;
-      const q = questions[currentIdx];
-      
-      // Update sidebar details
-      questionPositionLabel.textContent = `Q${currentIdx + 1}`;
-      questionHeading.textContent = `Question ${currentIdx + 1}`;
-      marksBadge.textContent = `${q.marks} marks`;
+    function showQuestion(idx) {
+      if (idx < 0 || idx >= questions.length) return;
+      saveCurrentDraft();
 
-      // Update progress metrics
-      progressText.textContent = `Question ${currentIdx + 1} of ${questions.length}`;
-      const pct = Math.round((currentIdx / questions.length) * 100);
-      progressPctText.textContent = `${pct}% complete`;
-      examProgressBar.style.width = `${pct}%`;
+      currentIdx = idx;
+      const q = questions[idx];
 
-      // Render question details
-      examQuestionText.textContent = q.question;
-      examAnswer.value = answersState[q.id] || "";
+      currentQuestionLabel.textContent = `QUESTION ${idx + 1} OF ${questions.length}`;
+      currentQuestionMarks.textContent = `${q.marks} Marks`;
+      currentQuestionPrompt.textContent = q.question;
+      examAnswerInput.value = q.answer || "";
       updateWordCount();
 
-      // Navigation buttons
-      prevBtn.disabled = currentIdx === 0;
-      nextBtn.disabled = false;
+      prevQBtn.disabled = idx === 0;
+      nextQBtn.textContent = idx === questions.length - 1 ? "Review Answers" : "Next Question →";
 
-      if (currentIdx === questions.length - 1) {
-        nextBtn.style.display = "none";
-        submitExamBtn.style.display = "inline-flex";
-      } else {
-        nextBtn.style.display = "inline-flex";
-        submitExamBtn.style.display = "none";
+      renderStepper();
+      if (window.stopExaminerSpeech) window.stopExaminerSpeech();
+    }
+
+    function readActiveQuestion() {
+      const q = questions[currentIdx];
+      if (!q) return;
+      readExamQBtn.disabled = true;
+      readExamQBtn.textContent = "🔊 Reading...";
+      if (window.speakExaminerQuestion) {
+        window.speakExaminerQuestion(q.question, () => {
+          readExamQBtn.disabled = false;
+          readExamQBtn.textContent = "🔊 Read Aloud";
+        });
       }
     }
+
+    function navigateQuestion(offset) {
+      const nextIdx = currentIdx + offset;
+      if (nextIdx >= 0 && nextIdx < questions.length) {
+        showQuestion(nextIdx);
+      }
+    }
+
+    examAnswerInput.addEventListener("input", () => {
+      questions[currentIdx].answer = examAnswerInput.value;
+      updateWordCount();
+      autoSaveIndicator.textContent = "Saving draft...";
+      clearTimeout(autoSaveTimer);
+      autoSaveTimer = setTimeout(saveCurrentDraft, 1000);
+    });
 
     function updateWordCount() {
-      const text = examAnswer.value.trim();
-      const words = text.split(/\s+/).filter(w => w.length > 0).length;
-      examWordCount.textContent = `${words} words`;
+      const words = examAnswerInput.value.trim().split(/\s+/).filter(Boolean).length;
+      examWordCount.textContent = `${words} word${words === 1 ? '' : 's'}`;
     }
 
-    examAnswer.addEventListener("input", () => {
-      updateWordCount();
-      // Store locally instantly
+    async function saveCurrentDraft() {
+      if (!questions[currentIdx]) return;
       const q = questions[currentIdx];
-      answersState[q.id] = examAnswer.value;
-    });
-
-    async function saveCurrentAnswer() {
-      const q = questions[currentIdx];
-      const answerVal = answersState[q.id] || "";
-      
-      // Show saving status
-      saveIndicator.textContent = "Saving...";
-      
-      try {
-        const studentKey = localStorage.getItem("viva_student_api_key") || "";
-        const studentUrl = localStorage.getItem("viva_student_base_url") || "";
-        const studentModel = localStorage.getItem("viva_student_model_name") || "";
-        const headers = { "Content-Type": "application/json" };
-        if (studentKey) headers["X-Api-Key"] = studentKey;
-        if (studentUrl) headers["X-Base-Url"] = studentUrl;
-        if (studentModel) headers["X-Model-Name"] = studentModel;
-
-        const res = await fetch(`/api/public/attempts/${attemptToken}/answers`, {
-          method: "POST",
-          headers: headers,
-          body: JSON.stringify({
-            question_id: q.id,
-            answer: answerVal
-          })
-        });
-        if (!res.ok) throw new Error();
-        
-        saveIndicator.textContent = "Saved";
-        setTimeout(() => {
-          if (saveIndicator.textContent === "Saved") saveIndicator.textContent = "";
-        }, 1500);
-      } catch {
-        saveIndicator.innerHTML = "<span style='color:var(--red)'>Save failed</span>";
-      }
-    }
-
-    prevBtn.addEventListener("click", async () => {
-      prevBtn.disabled = true;
-      await saveCurrentAnswer();
-      currentIdx--;
-      renderQuestion();
-    });
-
-    nextBtn.addEventListener("click", async () => {
-      nextBtn.disabled = true;
-      await saveCurrentAnswer();
-      currentIdx++;
-      renderQuestion();
-    });
-
-    submitExamBtn.addEventListener("click", async () => {
-      if (!confirm("Are you sure you want to submit your final assessment answers? You won't be able to edit them afterward.")) return;
-      await submitExam();
-    });
-
-    async function submitExam() {
-      submitExamBtn.disabled = true;
-      const originalText = submitExamBtn.textContent;
-      submitExamBtn.textContent = "Submitting & Evaluating...";
-      
-      // Save current answer first
-      await saveCurrentAnswer();
-      
-      // Verify everything is evaluated
-      try {
-        const studentKey = localStorage.getItem("viva_student_api_key") || "";
-        const studentUrl = localStorage.getItem("viva_student_base_url") || "";
-        const studentModel = localStorage.getItem("viva_student_model_name") || "";
-        const headers = {};
-        if (studentKey) headers["X-Api-Key"] = studentKey;
-        if (studentUrl) headers["X-Base-Url"] = studentUrl;
-        if (studentModel) headers["X-Model-Name"] = studentModel;
-        const res = await fetch(`/api/public/attempts/${attemptToken}/submit`, {
-          method: "POST",
-          headers: headers
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Submission failed");
-        
-        // Redirect to complete page
-        window.location.href = data.result_url;
-      } catch (err) {
-        alert(err.message || "Failed to submit assessment. Please ensure all answers are written.");
-        submitExamBtn.disabled = false;
-        submitExamBtn.textContent = originalText;
-      }
-    }
-
-    function setupTimer() {
-      const duration = attemptData.duration_minutes;
-      if (!duration || duration <= 0) return;
-      
-      timerWrapper.style.display = "flex";
-      
-      // We will parse started_at or use localStorage to persist exact end time
-      const storageKey = `viva_exam_end_${attemptToken}`;
-      let endTimeMs = localStorage.getItem(storageKey);
-      
-      if (!endTimeMs) {
-        // Fallback to current time + duration if server doesn't parse correctly,
-        // but let's try started_at first
-        const started = new Date().getTime(); // default
-        endTimeMs = started + (duration * 60 * 1000);
-        localStorage.setItem(storageKey, endTimeMs);
-      } else {
-        endTimeMs = parseInt(endTimeMs);
-      }
-
-      countdownInterval = setInterval(() => {
-        const now = new Date().getTime();
-        const diff = endTimeMs - now;
-        
-        if (diff <= 0) {
-          clearInterval(countdownInterval);
-          localStorage.removeItem(storageKey);
-          alert("Time has expired! Submitting your answers automatically.");
-          autoSubmit();
-        } else {
-          const mins = Math.floor(diff / 60000);
-          const secs = Math.floor((diff % 60000) / 1000);
-          timerDisplay.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-          
-          if (mins < 3) {
-            timerDisplay.style.color = "var(--red)";
-          }
-        }
-      }, 1000);
-    }
-
-    async function autoSubmit() {
-      // Auto save whatever is in the textarea first
-      const q = questions[currentIdx];
-      const answerVal = examAnswer.value.trim();
-      
       try {
         await fetch(`/api/public/attempts/${attemptToken}/answers`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question_id: q.id, answer: answerVal })
+          body: JSON.stringify({
+            question_id: q.id,
+            answer: examAnswerInput.value
+          })
         });
-      } catch {}
+        autoSaveIndicator.textContent = "✓ Draft auto-saved";
+        renderStepper();
+      } catch (_) {}
+    }
 
-      try {
-        const res = await fetch(`/api/public/attempts/${attemptToken}/submit`, { method: "POST" });
-        const data = await res.json();
-        if (res.ok) {
-          window.location.href = data.result_url;
-        } else {
-          window.location.href = `/viva/complete?attempt=${attemptToken}`;
+    function startTimer(initialSeconds) {
+      let secondsLeft = initialSeconds;
+      countdownInterval = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          clearInterval(countdownInterval);
+          examCountdown.textContent = "00:00";
+          if (window.Toast) Toast.warning("Time has expired! Submitting your examination answers now...", 5000);
+          submitExam();
+          return;
         }
-      } catch {
-        window.location.href = `/viva/complete?attempt=${attemptToken}`;
+
+        const mins = Math.floor(secondsLeft / 60);
+        const secs = secondsLeft % 60;
+        examCountdown.textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        if (secondsLeft < 300) {
+          examCountdown.style.color = "var(--danger)";
+        }
+      }, 1000);
+    }
+
+    async function confirmFinishExam() {
+      const unanswered = questions.filter(q => !(q.answer || "").trim()).length;
+      let msg = "Are you sure you want to finish and submit your viva examination?";
+      if (unanswered > 0) {
+        msg = `You have ${unanswered} unanswered question${unanswered === 1 ? '' : 's'}. Are you sure you want to submit?`;
+      }
+
+      const confirmed = await Modal.confirm("Submit Examination", msg, { confirmText: "Finish & Submit" });
+      if (confirmed) {
+        await submitExam();
       }
     }
 
-    loadAttempt();
+    async function submitExam() {
+      await saveCurrentDraft();
+      const finishBtn = document.getElementById("finishExamBtn");
+      finishBtn.disabled = true;
+      finishBtn.textContent = "Grading & Submitting...";
+
+      try {
+        const res = await fetch(`/api/public/attempts/${attemptToken}/submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Submission failed");
+        }
+
+        window.location.href = data.result_url;
+      } catch (err) {
+        if (window.Toast) Toast.error(err.message);
+        finishBtn.disabled = false;
+        finishBtn.textContent = "Finish & Submit Exam ✓";
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", loadExam);
   </script>
 </body>
 </html>

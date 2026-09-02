@@ -1,30 +1,47 @@
+/**
+ * Viva AI — Theme Manager
+ * Obsidian Aurora Light/Dark Theme Controller
+ */
 (function () {
-  const saved = localStorage.getItem("viva_theme");
-  const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const theme = saved || (prefersDark ? "dark" : "light");
-  if (theme === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
-  }
-})();
+  'use strict';
 
-function toggleTheme() {
-  const current = document.documentElement.getAttribute("data-theme");
-  const next = current === "dark" ? "light" : "dark";
-  if (next === "dark") {
-    document.documentElement.setAttribute("data-theme", "dark");
-  } else {
-    document.documentElement.removeAttribute("data-theme");
-  }
-  localStorage.setItem("viva_theme", next);
-  updateThemeButtons();
-}
+  const STORAGE_KEY = 'viva_theme_preference';
 
-function updateThemeButtons() {
-  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  document.querySelectorAll(".theme-toggle-btn").forEach(btn => {
-    btn.innerHTML = isDark ? '☀️ <span class="theme-btn-text">Light</span>' : '🌙 <span class="theme-btn-text">Dark</span>';
-    btn.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+  function getPreferredTheme() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
+    }
+    // Default to dark mode for Obsidian Aurora aesthetic
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btns = document.querySelectorAll('.theme-toggle-btn');
+    btns.forEach(btn => {
+      if (theme === 'light') {
+        btn.innerHTML = '🌙 <span class="theme-btn-text">Dark</span>';
+        btn.title = 'Switch to Obsidian Dark';
+      } else {
+        btn.innerHTML = '☀️ <span class="theme-btn-text">Light</span>';
+        btn.title = 'Switch to Luminous Light';
+      }
+    });
+  }
+
+  window.toggleTheme = function () {
+    const current = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(STORAGE_KEY, next);
+    applyTheme(next);
+  };
+
+  // Immediate execution before DOM paint to prevent flash
+  const initialTheme = getPreferredTheme();
+  document.documentElement.setAttribute('data-theme', initialTheme);
+
+  document.addEventListener('DOMContentLoaded', () => {
+    applyTheme(initialTheme);
   });
-}
-
-document.addEventListener("DOMContentLoaded", updateThemeButtons);
+})();
