@@ -26,7 +26,7 @@ Traditional viva and oral defense preparation lacks objective, real-time feedbac
    - Non-answer heuristics to filter blank/evasive answers without incurring API latency.
 
 4. **Obsidian Aurora Design System & Oral Voice HUD**:
-   - Custom design system created with Stitch MCP (`Plus Jakarta Sans`, `Inter`, `JetBrains Mono`).
+   - Hand-crafted design system (`Plus Jakarta Sans`, `Inter`, `JetBrains Mono`) with dark-first palette and responsive layout.
    - Web Speech API integration for spoken oral responses.
    - Pomodoro Focus Suite with Web Audio API chime synthesis.
 

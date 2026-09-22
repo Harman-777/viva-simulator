@@ -1,13 +1,12 @@
 /* ==========================================================================
-   VIVA AI — Bespoke Haute Dark Multi-Color Design System
-   Modern Academic Oral Examination & Viva Defense Suite
-   Inspired by Google Stitch Architecture v4.9
+   VIVA AI — UI Design System & Component Styles
+   Oral Examination & Viva Defense Suite
    ========================================================================== */
 
 @import url("https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap");
 
 :root {
-  /* Bespoke Haute Dark Multi-Color Palette (Default) */
+  /* Dark Color Palette (Default) */
   --canvas: #12131a;
   --surface: #1a1b22;
   --surface-hover: #1e1f27;
@@ -28,7 +27,7 @@
   --primary-glow: rgba(108, 92, 231, 0.35);
   --primary-subtle: rgba(108, 92, 231, 0.15);
 
-  /* Secondary: Warm Haute Gold */
+  /* Secondary: Warm Amber / Gold */
   --secondary: #d4c78f;
   --secondary-hover: #e5d9a0;
   --secondary-glow: rgba(212, 199, 143, 0.32);
@@ -218,7 +217,7 @@ body::before {
   animation: floatOrb 22s ease-in-out infinite;
 }
 
-/* Bottom Left Haute Gold Luminescence */
+/* Bottom Left Amber Glow */
 body::after {
   bottom: -150px;
   left: -90px;
@@ -466,7 +465,7 @@ p {
 }
 
 /* ==========================================================================
-   Panels, Cards & Surfaces (Haute Bento Layout)
+   Panels, Cards & Surfaces
    ========================================================================== */
 
 .panel {
@@ -986,7 +985,7 @@ textarea {
 }
 
 /* ==========================================================================
-   Haute Dark Specialized Components (Cards, Steppers, Ingestion & Modals)
+   Specialized Components (Cards, Steppers, Ingestion & Modals)
    ========================================================================== */
 
 /* Centered Glass Cards (Auth, Exam Intake, Completion) */

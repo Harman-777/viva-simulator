@@ -1,66 +1,110 @@
-# Viva Simulator (viva-simulator)
-### Intelligent AI Oral Examination & Defense Platform
+# Viva Simulator
 
-Viva Simulator is a modern, lightweight, full-stack academic platform for technical oral viva examinations, thesis defenses, syllabus material ingestion, examiner voice synthesis, and multi-dimensional rubric evaluation.
-
----
-
-## ⚡ Key Highlights & Features
-
-- **Local Ollama & Cloud AI Routing**: Native zero-dependency connection to local Ollama (`qwen2.5-coder:3b`, `llama3`, `deepseek-r1`, etc.) at `http://localhost:11434` or cloud providers (OpenAI `gpt-4o-mini`, Google Gemini `gemini-1.5-flash`). Includes a **"Test Connection ⚡"** pre-flight probe.
-- **Dual Voice Interaction**:
-  - **🔊 AI Oral Examiner Voice Read-Aloud (TTS)**: Web Speech Synthesis for realistic oral viva questioning.
-  - **🎙️ Speech-to-Text Voice Dictation (STT)**: Hands-free verbal answering with live word counting.
-- **4-Dimension Rubric Assessment Visualizer**:
-  1. **Concept Precision (20%)**
-  2. **Explanation Clarity (20%)**
-  3. **Evidence & Concrete Examples (20%)**
-  4. **Keyword & Terminology Coverage (40%)**
-- **Document & Syllabus Ingestion**: Ingest PDF (`pypdf` + raw stream fallback), DOCX, TXT, Markdown, CSV, and code files to generate relevant oral viva question sets.
-- **Personal Study Vault & Revision Export**: Private note-taking HUD on every question, star bookmarks, and one-click **"Export Study Guide (.md)"** report generator.
-- **Productivity & Focus Suite**: Pomodoro timer with Web Audio synthesized focus ambiance (Rain, Deep Brown Noise, Gentle White Noise) and live weather pill.
-- **Instructor Command Center**:
-  - Author timed viva assessments with custom question ordering and question banks.
-  - Set PIN security codes and auto-expiration timestamps.
-  - Duplicate/clone assessments and delete assessments.
-  - Inspect student oral recordings and evaluations with **Manual Mark Overrides & Audit Logs**.
-  - **Export Gradebook to CSV** with one click.
-- **Non-Blocking Glassmorphic UI**: Obsidian Aurora 2.0 theme with light/dark toggle, unified toast notifications (`Toast.success`, `Toast.error`), and accessible confirmation modals.
+A web app designed to help engineering and computer science students practice for oral viva examinations and thesis defenses. It generates subject-specific questions from lecture notes or syllabus files, reads them aloud, lets students speak their answers using voice dictation, and grades responses based on technical accuracy and keyword coverage.
 
 ---
 
-## 🚀 Quickstart
+## Why I Built This
 
-### 1. Requirements
-- Python 3.10+
-- Optional: `pypdf` (for PDF document ingestion)
+During engineering vivas, many students know their subject well on paper but freeze up or struggle to structure their explanations when questioned by professors. Mock vivas with classmates rarely happen because everyone is busy preparing for their own exams. 
 
-```bash
-pip install pypdf
+I built this project to simulate that high-pressure oral exam environment:
+1. An AI examiner asks you technical questions out loud.
+2. You speak your answer through your microphone instead of typing.
+3. The system checks if you covered the necessary technical keywords, provided clear reasoning, and gave concrete examples.
+4. Professors can also use the teacher portal to set up timed exams for their classes, generate question banks from lecture slides, and review candidate recordings.
+
+---
+
+## Core Architecture & Technical Choices
+
+- **Backend (Python standard library):** Built using Python's built-in `http.server` and `sqlite3` modules. I intentionally avoided heavy frameworks like Django or Flask so the entire project can be run with zero setup on any machine having Python 3.10+.
+- **Voice Recognition (Web Speech API):** Speech-to-text dictation runs entirely in the browser using native `webkitSpeechRecognition`. This eliminates the need for expensive third-party speech API keys and keeps audio processing fast and private.
+- **Local & Cloud LLM Support:** Works out of the box with local models running on **Ollama** (`qwen2.5-coder:3b`, `llama3`) for 100% offline and free use, but also supports OpenAI and Google Gemini keys if cloud inference is preferred.
+- **Evaluation Rubric:** Scores answers across 4 distinct dimensions:
+  - Keyword Coverage (40%) — verifies that core technical terms were mentioned.
+  - Concept Precision (20%) — checks for theoretical correctness.
+  - Explanation Clarity (20%) — evaluates sentence flow and coherence.
+  - Examples & Evidence (20%) — looks for practical applications or analogies.
+- **Database:** SQLite with Write-Ahead Logging (WAL mode) enabled for safe concurrent access during multi-student exams.
+
+---
+
+## Project Structure
+
+```
+viva-simulator/
+├── server.py              # Main HTTP server & API endpoint handlers
+├── test_server.py         # Automated unit & integration test suite
+├── requirements.txt       # Optional dependencies (pypdf for reading PDF notes)
+├── vercel.json            # Serverless deployment configuration for Vercel
+├── data/
+│   └── questions.json     # Preloaded starter questions for common CS topics
+└── static/                # Frontend user interfaces and client-side logic
+    ├── index.html         # Project landing page
+    ├── styles.css         # Global design system stylesheet
+    ├── theme.js           # Theme toggle controller
+    ├── toast.js           # Notification toast helper
+    ├── auth.js            # Teacher session validation
+    ├── student-dashboard.html # Student hub and model configuration
+    ├── questions.html     # Interactive practice stage & speech recorder
+    ├── teacher-login.html # Instructor authentication
+    ├── teacher-dashboard.html # Assessment management & stats
+    ├── teacher-builder.html # Assessment creation & question authoring
+    ├── teacher-share.html # Assessment link & access token generator
+    ├── teacher-results.html # Exam submission analytics & CSV export
+    ├── teacher-student.html # Individual candidate response review
+    ├── viva-entry.html    # Candidate exam intake & PIN entry
+    ├── viva-exam.html     # Proctored viva exam room
+    └── viva-complete.html # Exam submission & score breakdown
 ```
 
-### 2. Launch Local AI with Ollama (Optional)
-If running local models without API keys:
+---
+
+## Setup & Running Locally
+
+### 1. Prerequisites
+- Python 3.10 or newer
+- (Optional) `pypdf` if you want to upload PDF lecture notes:
+  ```bash
+  pip install pypdf
+  ```
+
+### 2. (Optional) Run with Local AI via Ollama
+If you want to use local models completely free without an API key:
 ```bash
 ollama run qwen2.5-coder:3b
 ```
+*(Leave Ollama running in the background on port 11434).*
 
-### 3. Start the Server
+### 3. Start the Web Server
 ```bash
 python server.py
 ```
-Open **`http://localhost:8000`** in your browser.
+Open **`http://localhost:8000`** in Google Chrome or Microsoft Edge.
 
-Default Teacher Login:
+> **Note on Browser Compatibility:** Voice dictation requires the Web Speech API. For the best experience, use a Chromium-based browser (Chrome, Edge, Brave). Firefox and Safari support text answering and audio read-aloud, but their speech-to-text dictation may be limited.
+
+---
+
+## Default Instructor Credentials
+
+To access the teacher portal locally:
+- **URL:** `http://localhost:8000/teacher/login`
 - **Email:** `teacher@example.com`
 - **Password:** `password`
 
 ---
 
-## 🧪 Automated Testing
+## Running Automated Tests
 
-Run the automated unit and end-to-end integration test suite:
+To run the unit test suite verifying database setup, authentication, rubric calculations, and exam flows:
 ```bash
 python test_server.py
 ```
-All 11 test modules verify authentication, password hashing, document parsing, Ollama endpoint normalization, rubric evaluation, public exam lifecycles, and teacher mark overrides.
+All 13 tests should pass.
+
+---
+
+## License
+MIT License. Created for academic and educational learning.

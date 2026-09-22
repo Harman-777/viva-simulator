@@ -1616,22 +1616,25 @@ class VivaHandler(BaseHTTPRequestHandler):
     def serve_page(self, path: str):
         pages = {
             "/": "index.html",
-            "/student": "student-dashboard.html",
-            "/questions": "questions.html",
-            "/teacher/login": "teacher-login.html",
-            "/teacher": "teacher-dashboard.html",
-            "/teacher/vivas/new": "teacher-builder.html",
-            "/teacher/vivas/edit": "teacher-builder.html",
-            "/teacher/vivas/share": "teacher-share.html",
-            "/teacher/vivas/results": "teacher-results.html",
-            "/teacher/vivas/student": "teacher-student.html",
+            "/student": "student/dashboard.html",
+            "/student/dashboard": "student/dashboard.html",
+            "/questions": "student/practice.html",
+            "/student/practice": "student/practice.html",
+            "/teacher/login": "teacher/login.html",
+            "/teacher": "teacher/dashboard.html",
+            "/teacher/dashboard": "teacher/dashboard.html",
+            "/teacher/vivas/new": "teacher/builder.html",
+            "/teacher/vivas/edit": "teacher/builder.html",
+            "/teacher/vivas/share": "teacher/share.html",
+            "/teacher/vivas/results": "teacher/results.html",
+            "/teacher/vivas/student": "teacher/student.html",
         }
         if re.fullmatch(r"/viva/[A-Za-z0-9_-]+", path):
-            return self.serve_file(STATIC_DIR / "viva-entry.html")
+            return self.serve_file(STATIC_DIR / "viva" / "entry.html")
         if re.fullmatch(r"/viva/[A-Za-z0-9_-]+/exam", path):
-            return self.serve_file(STATIC_DIR / "viva-exam.html")
+            return self.serve_file(STATIC_DIR / "viva" / "exam.html")
         if path == "/viva/complete":
-            return self.serve_file(STATIC_DIR / "viva-complete.html")
+            return self.serve_file(STATIC_DIR / "viva" / "complete.html")
         if path in pages:
             return self.serve_file(STATIC_DIR / pages[path])
 
@@ -1641,6 +1644,37 @@ class VivaHandler(BaseHTTPRequestHandler):
     def serve_file(self, path: Path):
         try:
             resolved = path.resolve()
+            if not resolved.is_file():
+                filename = path.name
+                # Fallback to domain subdirectories if requesting legacy flat paths
+                for candidate in [
+                    STATIC_DIR / "css" / filename,
+                    STATIC_DIR / "js" / "shared" / filename,
+                    STATIC_DIR / "js" / "student" / filename,
+                    STATIC_DIR / "student" / filename,
+                    STATIC_DIR / "teacher" / filename,
+                    STATIC_DIR / "viva" / filename,
+                ]:
+                    if candidate.is_file():
+                        resolved = candidate.resolve()
+                        break
+
+                alias_map = {
+                    "student-dashboard.html": STATIC_DIR / "student" / "dashboard.html",
+                    "questions.html": STATIC_DIR / "student" / "practice.html",
+                    "teacher-login.html": STATIC_DIR / "teacher" / "login.html",
+                    "teacher-dashboard.html": STATIC_DIR / "teacher" / "dashboard.html",
+                    "teacher-builder.html": STATIC_DIR / "teacher" / "builder.html",
+                    "teacher-share.html": STATIC_DIR / "teacher" / "share.html",
+                    "teacher-results.html": STATIC_DIR / "teacher" / "results.html",
+                    "teacher-student.html": STATIC_DIR / "teacher" / "student.html",
+                    "viva-entry.html": STATIC_DIR / "viva" / "entry.html",
+                    "viva-exam.html": STATIC_DIR / "viva" / "exam.html",
+                    "viva-complete.html": STATIC_DIR / "viva" / "complete.html",
+                }
+                if not resolved.is_file() and filename in alias_map:
+                    resolved = alias_map[filename].resolve()
+
             if ROOT.resolve() not in resolved.parents or not resolved.is_file():
                 raise FileNotFoundError
             content = resolved.read_bytes()

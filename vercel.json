@@ -16,6 +16,34 @@
   ],
   "routes": [
     {
+      "src": "/static/styles.css",
+      "dest": "/static/css/styles.css"
+    },
+    {
+      "src": "/static/auth.js",
+      "dest": "/static/js/shared/auth.js"
+    },
+    {
+      "src": "/static/theme.js",
+      "dest": "/static/js/shared/theme.js"
+    },
+    {
+      "src": "/static/toast.js",
+      "dest": "/static/js/shared/toast.js"
+    },
+    {
+      "src": "/static/notes.js",
+      "dest": "/static/js/student/notes.js"
+    },
+    {
+      "src": "/static/questions.js",
+      "dest": "/static/js/student/questions.js"
+    },
+    {
+      "src": "/static/focus-(.*)\\.js",
+      "dest": "/static/js/student/focus-$1.js"
+    },
+    {
       "src": "/static/(.*)",
       "dest": "/static/$1"
     },

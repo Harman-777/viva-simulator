@@ -350,6 +350,43 @@ class TestVivaSimulatorCore(unittest.TestCase):
         self.assertEqual(len(list_data["materials"]), 1)
         self.assertEqual(list_data["materials"][0]["file_name"], "Operating_Systems_Unit3.txt")
 
+    def test_13_page_and_asset_routing(self):
+        routes_to_test = [
+            ("/", "viva-simulator"),
+            ("/student", "Student Hub"),
+            ("/questions", "Practice Lab"),
+            ("/teacher/login", "Teacher Access"),
+            ("/teacher", "Teacher Dashboard"),
+            ("/teacher/vivas/new", "Assessment Builder"),
+            ("/teacher/vivas/share", "Share & Security Console"),
+            ("/teacher/vivas/results", "Assessment Results"),
+            ("/teacher/vivas/student", "Student Attempt Review"),
+            ("/static/css/styles.css", "VIVA AI"),
+            ("/static/js/shared/theme.js", "toggleTheme"),
+            ("/static/js/student/notes.js", "StudentNotes"),
+        ]
+        for route, snippet in routes_to_test:
+            status, data = call_api("GET", route)
+            self.assertEqual(status, 200, f"Route {route} failed with status {status}")
+            self.assertIn(snippet, data.get("raw", ""), f"Snippet '{snippet}' not found in {route}")
+
+    def test_14_legacy_asset_fallback(self):
+        legacy_routes = [
+            ("/static/styles.css", "VIVA AI"),
+            ("/static/theme.js", "toggleTheme"),
+            ("/static/toast.js", "showToast"),
+            ("/static/notes.js", "StudentNotes"),
+            ("/static/questions.js", "exportPracticeStudyGuide"),
+            ("/static/focus-tools.js", "startFocusTimer"),
+            ("/static/student-dashboard.html", "Student Hub"),
+            ("/static/questions.html", "Practice Lab"),
+            ("/static/teacher-login.html", "Teacher Access"),
+        ]
+        for route, snippet in legacy_routes:
+            status, data = call_api("GET", route)
+            self.assertEqual(status, 200, f"Legacy fallback for {route} failed with status {status}")
+            self.assertIn(snippet, data.get("raw", ""), f"Snippet '{snippet}' not found in {route}")
+
 
 if __name__ == "__main__":
     unittest.main()
