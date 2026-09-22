@@ -1,838 +1,421 @@
-<!doctype html>
-<html lang="en" data-theme="dark">
+<!DOCTYPE html>
+<html class="dark" lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Viva Simulator — AI oral examination platform for technical defense, syllabus document ingestion, and modern viva preparation.">
-  <title>viva-simulator · AI Oral Examination Platform</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/styles.css">
-  <script src="/static/theme.js"></script>
-  <script src="/static/toast.js"></script>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <meta name="description" content="Viva Simulator — Next-generation AI oral examination and academic assessment platform.">
+  <title>viva-simulator · Research &amp; Defense Core</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com" rel="preconnect">
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&amp;family=Manrope:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
   <style>
-    /* ==========================================================
-       PIXEL-PERFECT REPLICA OF THE MOCKUP DESIGN
-       ========================================================== */
-
-    :root {
-      --bg-dark: #070913;
-      --card-bg: rgba(18, 22, 39, 0.7);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --card-border-glow: rgba(99, 102, 241, 0.3);
-      --glass-nav: rgba(18, 22, 38, 0.65);
-      --glass-nav-border: rgba(255, 255, 255, 0.09);
-      --purple-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-      --blue-gradient: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%);
-      --btn-purple: #8b5cf6;
-      --btn-purple-hover: #7c3aed;
-      --btn-blue: #4f46e5;
-      --btn-blue-hover: #4338ca;
-    }
-
-    [data-theme="light"] {
-      --bg-dark: #f8fafc;
-      --card-bg: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(0, 0, 0, 0.08);
-      --card-border-glow: rgba(99, 102, 241, 0.25);
-      --glass-nav: rgba(255, 255, 255, 0.8);
-      --glass-nav-border: rgba(0, 0, 0, 0.08);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      min-height: 100vh;
-      background-color: var(--bg-dark);
-      font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
-      color: #ffffff;
-      overflow-x: hidden;
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: background-color 0.3s ease;
-    }
-
-    [data-theme="light"] body {
-      color: #0f172a;
-    }
-
-    /* Disable original body pseudo elements */
-    body::before, body::after {
-      display: none !important;
-    }
-
-    /* ==========================================================
-       ANIMATED FLOATING 3D ORBS BACKGROUND
-       ========================================================== */
-    .orb-scene {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      z-index: 0;
-      pointer-events: none;
-    }
-
-    .orb {
-      position: absolute;
-      border-radius: 50%;
-      pointer-events: none;
-      filter: blur(45px);
-      will-change: transform;
-    }
-
-    /* Large Top-Right Purple Orb (exactly like mockup) */
-    .orb-top-right {
-      width: 480px;
-      height: 480px;
-      top: -60px;
-      right: -80px;
-      background: radial-gradient(circle at 35% 35%, #8b5cf6 0%, #6366f1 45%, rgba(139, 92, 246, 0.1) 75%, transparent 100%);
-      opacity: 0.65;
-      animation: floatTopRight 16s ease-in-out infinite alternate;
-    }
-
-    /* Mid-Left Violet Sphere */
-    .orb-mid-left {
-      width: 220px;
-      height: 220px;
-      top: 32%;
-      left: 6%;
-      background: radial-gradient(circle at 35% 35%, #a855f7 0%, #6366f1 50%, rgba(99, 102, 241, 0.2) 75%, transparent 100%);
-      opacity: 0.55;
-      animation: floatMidLeft 18s ease-in-out infinite alternate;
-    }
-
-    /* Bottom-Left Massive Ambient Orb */
-    .orb-bottom-left {
-      width: 520px;
-      height: 520px;
-      bottom: -150px;
-      left: -120px;
-      background: radial-gradient(circle at 40% 40%, #4f46e5 0%, #312e81 60%, transparent 100%);
-      opacity: 0.5;
-      animation: floatBottomLeft 22s ease-in-out infinite alternate;
-    }
-
-    /* Mid-Right Small Violet Sphere */
-    .orb-mid-right {
-      width: 170px;
-      height: 170px;
-      top: 48%;
-      right: 8%;
-      background: radial-gradient(circle at 35% 35%, #6366f1 0%, #4338ca 65%, transparent 100%);
-      opacity: 0.55;
-      animation: floatMidRight 14s ease-in-out infinite alternate;
-    }
-
-    /* Keyframe Animations for Natural Floating Motion */
-    @keyframes floatTopRight {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-35px, 45px) scale(1.08); }
-      100% { transform: translate(-15px, 20px) scale(0.96); }
-    }
-
-    @keyframes floatMidLeft {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(30px, -40px) scale(1.15); }
-      100% { transform: translate(10px, 35px) scale(0.92); }
-    }
-
-    @keyframes floatBottomLeft {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(45px, -30px) scale(1.06); }
-      100% { transform: translate(-20px, 25px) scale(0.95); }
-    }
-
-    @keyframes floatMidRight {
-      0% { transform: translate(0, 0) scale(1); }
-      50% { transform: translate(-25px, -35px) scale(1.12); }
-      100% { transform: translate(20px, 30px) scale(0.9); }
-    }
-
-    [data-theme="light"] .orb {
-      opacity: 0.22;
-      filter: blur(65px);
-    }
-
-    /* ==========================================================
-       MAIN CONTENT CONTAINER
-       ========================================================== */
-    .wrapper {
-      position: relative;
-      z-index: 10;
-      width: 100%;
-      max-width: 1200px;
-      padding: 36px 24px 80px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    /* ==========================================================
-       TOP NAVIGATION BAR (Exact Capsule Design)
-       ========================================================== */
-    .nav-capsule {
-      width: 100%;
-      max-width: 1050px;
-      height: 60px;
-      background: var(--glass-nav);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--glass-nav-border);
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 28px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-      margin-bottom: 60px;
-    }
-
-    .nav-brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      color: #ffffff;
-      font-weight: 800;
-      font-size: 18px;
-      letter-spacing: -0.02em;
-    }
-
-    [data-theme="light"] .nav-brand {
-      color: #0f172a;
-    }
-
-    /* Custom 'V' Brand Mark */
-    .nav-logo-v {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 16px rgba(168, 85, 247, 0.5);
-    }
-
-    .nav-logo-v svg {
-      width: 18px;
-      height: 18px;
-      fill: #ffffff;
-    }
-
-    /* Theme Toggle Switch (Mockup Style) */
-    .theme-control {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .theme-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: rgba(255, 255, 255, 0.85);
-    }
-
-    [data-theme="light"] .theme-label {
-      color: #475569;
-    }
-
-    .toggle-track {
-      width: 50px;
-      height: 26px;
-      background: #4f46e5;
-      border-radius: 9999px;
-      position: relative;
-      transition: background-color 0.25s ease;
-      cursor: pointer;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-    }
-
-    [data-theme="light"] .toggle-track {
-      background: #cbd5e1;
-      border-color: #94a3b8;
-    }
-
-    .toggle-thumb {
-      width: 20px;
-      height: 20px;
-      background: #ffffff;
-      border-radius: 50%;
-      position: absolute;
-      top: 2px;
-      right: 3px;
-      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    [data-theme="light"] .toggle-thumb {
-      transform: translateX(-24px);
-    }
-
-    /* ==========================================================
-       HERO SECTION
-       ========================================================== */
-    .hero-section {
-      text-align: center;
-      max-width: 900px;
-      margin-bottom: 40px;
-    }
-
-    .hero-title {
-      font-size: clamp(38px, 5.2vw, 62px);
-      font-weight: 900;
-      letter-spacing: -0.04em;
-      line-height: 1.14;
-      margin-bottom: 20px;
-      color: #ffffff;
-    }
-
-    [data-theme="light"] .hero-title {
-      color: #0f172a;
-    }
-
-    .gradient-ai {
-      background: linear-gradient(135deg, #c084fc 0%, #a855f7 35%, #6366f1 75%, #38bdf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .hero-subtitle {
-      font-size: clamp(15px, 1.7vw, 17.5px);
-      color: #94a3b8;
-      line-height: 1.65;
-      max-width: 700px;
-      margin: 0 auto;
-      font-weight: 500;
-    }
-
-    [data-theme="light"] .hero-subtitle {
-      color: #475569;
-    }
-
-    /* ==========================================================
-       SEARCH & JOIN BAR (Capsule style with 'Launch Exam' button)
-       ========================================================== */
-    .join-container {
-      width: 100%;
-      max-width: 620px;
-      margin: 36px auto 24px;
-    }
-
-    .join-box {
-      width: 100%;
-      height: 58px;
-      background: rgba(22, 27, 46, 0.75);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      border-radius: 9999px;
-      display: flex;
-      align-items: center;
-      padding: 5px 7px 5px 22px;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-      transition: all 0.2s ease;
-    }
-
-    [data-theme="light"] .join-box {
-      background: rgba(255, 255, 255, 0.95);
-      border-color: rgba(0, 0, 0, 0.12);
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
-    }
-
-    .join-box:focus-within {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25), 0 12px 36px rgba(0, 0, 0, 0.45);
-    }
-
-    .search-icon {
-      color: #64748b;
-      margin-right: 14px;
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-    }
-
-    .join-input {
-      flex: 1;
-      border: none;
-      background: transparent;
-      outline: none;
-      font-size: 15px;
-      font-family: inherit;
-      color: #ffffff;
-      min-width: 0;
-    }
-
-    [data-theme="light"] .join-input {
-      color: #0f172a;
-    }
-
-    .join-input::placeholder {
-      color: #64748b;
-    }
-
-    .launch-btn {
-      height: 48px;
-      padding: 0 26px;
-      border-radius: 9999px;
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      color: #ffffff;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: inherit;
-      border: none;
-      cursor: pointer;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
-      transition: all 0.2s ease;
-      flex-shrink: 0;
-    }
-
-    .launch-btn:hover {
-      background: linear-gradient(135deg, #797cfa 0%, #6366f1 100%);
-      transform: translateY(-1px);
-      box-shadow: 0 6px 24px rgba(99, 102, 241, 0.6);
-    }
-
-    /* ==========================================================
-       FEATURE STAT CHIPS (3 Chips as shown in mockup)
-       ========================================================== */
-    .chips-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      margin: 12px auto 54px;
-      flex-wrap: wrap;
-    }
-
-    .stat-chip {
-      height: 44px;
-      padding: 0 20px;
-      background: rgba(22, 27, 46, 0.55);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border: 1px solid rgba(255, 255, 255, 0.09);
-      border-radius: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #e2e8f0;
-      transition: all 0.2s ease;
-    }
-
-    [data-theme="light"] .stat-chip {
-      background: rgba(255, 255, 255, 0.8);
-      border-color: rgba(0, 0, 0, 0.08);
-      color: #334155;
-    }
-
-    .stat-chip:hover {
-      border-color: rgba(99, 102, 241, 0.45);
-      transform: translateY(-2px);
-      background: rgba(26, 32, 54, 0.75);
-    }
-
-    .chip-icon {
-      width: 24px;
-      height: 24px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      color: #cbd5e1;
-    }
-
-    /* ==========================================================
-       TWO PORTAL CARDS (Student Space & Instructor Portal)
-       ========================================================== */
-    .portals-container {
-      width: 100%;
-      max-width: 1020px;
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 28px;
-      margin-bottom: 40px;
-    }
-
-    .portal-box {
-      background: var(--card-bg);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid var(--card-border);
-      border-radius: 22px;
-      padding: 36px 32px 32px;
-      display: flex;
-      flex-direction: column;
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
-    }
-
-    .portal-box:hover {
-      border-color: var(--card-border-glow);
-      transform: translateY(-5px);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), 0 0 35px rgba(99, 102, 241, 0.2);
-    }
-
-    /* Top Icon + Title Row */
-    .portal-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 16px;
-      margin-bottom: 22px;
-    }
-
-    .portal-avatar {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      flex-shrink: 0;
-    }
-
-    .portal-student .portal-avatar {
-      background: rgba(139, 92, 246, 0.15);
-      border: 1px solid rgba(139, 92, 246, 0.3);
-      color: #c084fc;
-    }
-
-    .portal-teacher .portal-avatar {
-      background: rgba(99, 102, 241, 0.15);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      color: #818cf8;
-    }
-
-    .portal-headings h3 {
-      font-size: 19px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 6px;
-      letter-spacing: -0.02em;
-    }
-
-    [data-theme="light"] .portal-headings h3 {
-      color: #0f172a;
-    }
-
-    .portal-headings p {
-      font-size: 13px;
-      color: #94a3b8;
-      line-height: 1.5;
-    }
-
-    [data-theme="light"] .portal-headings p {
-      color: #64748b;
-    }
-
-    /* Bullet Points */
-    .portal-bullets {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 28px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      flex-grow: 1;
-    }
-
-    .portal-bullets li {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13.5px;
-      color: #cbd5e1;
-      font-weight: 500;
-    }
-
-    [data-theme="light"] .portal-bullets li {
-      color: #334155;
-    }
-
-    .bullet-dot {
-      width: 5px;
-      height: 5px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-
-    .portal-student .bullet-dot {
-      background: #c084fc;
-      box-shadow: 0 0 8px rgba(192, 132, 252, 0.6);
-    }
-
-    .portal-teacher .bullet-dot {
-      background: #818cf8;
-      box-shadow: 0 0 8px rgba(129, 140, 248, 0.6);
-    }
-
-    /* Action Buttons (Exact pill buttons as shown in mockup) */
-    .portal-action-btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: fit-content;
-      padding: 10px 22px;
-      border-radius: 9999px;
-      font-size: 13.5px;
-      font-weight: 700;
-      font-family: inherit;
-      text-decoration: none;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: none;
-    }
-
-    .portal-student .portal-action-btn {
-      background: #8b5cf6;
-      color: #ffffff;
-      box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4);
-    }
-
-    .portal-student .portal-action-btn:hover {
-      background: #7c3aed;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.6);
-    }
-
-    .portal-teacher .portal-action-btn {
-      background: #4f46e5;
-      color: #ffffff;
-      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
-    }
-
-    .portal-teacher .portal-action-btn:hover {
-      background: #4338ca;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 22px rgba(79, 70, 229, 0.6);
-    }
-
-    /* ==========================================================
-       RESPONSIVE DESIGN
-       ========================================================== */
-    @media (max-width: 860px) {
-      .portals-container {
-        grid-template-columns: 1fr;
-      }
-      .nav-capsule {
-        padding: 0 18px;
-        margin-bottom: 35px;
-      }
-      .hero-title {
-        font-size: 32px;
-      }
-      .chips-row {
-        gap: 8px;
-      }
-      .stat-chip {
-        padding: 0 12px;
-        font-size: 12.5px;
-      }
-    }
-
-    @media (max-width: 540px) {
-      .join-box {
-        height: auto;
-        flex-direction: column;
-        border-radius: 18px;
-        padding: 12px;
-        gap: 10px;
-      }
-      .join-input {
-        width: 100%;
-        text-align: center;
-        padding: 6px 0;
-      }
-      .launch-btn {
-        width: 100%;
-      }
-    }
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
   </style>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "on-secondary-fixed-variant": "#4f471b",
+            "surface": "#12131a",
+            "on-tertiary-fixed-variant": "#005144",
+            "surface-container-high": "#292931",
+            "on-error": "#690005",
+            "secondary": "#d4c78f",
+            "on-secondary-container": "#c2b57f",
+            "primary-fixed-dim": "#c6bfff",
+            "inverse-surface": "#e3e1ec",
+            "outline": "#928ea0",
+            "surface-tint": "#c6bfff",
+            "surface-bright": "#383941",
+            "secondary-fixed": "#f1e3a9",
+            "tertiary-fixed": "#50fcdd",
+            "tertiary": "#1ddfc1",
+            "error": "#ffb4ab",
+            "surface-dim": "#12131a",
+            "on-secondary-fixed": "#211b00",
+            "on-background": "#e3e1ec",
+            "outline-variant": "#474554",
+            "on-primary-fixed": "#160066",
+            "on-primary-container": "#faf6ff",
+            "on-primary-fixed-variant": "#4029ba",
+            "primary-container": "#6c5ce7",
+            "surface-container-low": "#1a1b22",
+            "on-surface-variant": "#c8c4d7",
+            "primary-fixed": "#e4dfff",
+            "on-error-container": "#ffdad6",
+            "surface-container-lowest": "#0d0e15",
+            "tertiary-fixed-dim": "#1ddfc1",
+            "on-tertiary": "#00382f",
+            "secondary-container": "#4f471b",
+            "on-surface": "#e3e1ec",
+            "background": "#12131a",
+            "error-container": "#93000a",
+            "on-tertiary-container": "#dafff4",
+            "inverse-on-surface": "#2f3038",
+            "tertiary-container": "#00806e",
+            "on-secondary": "#383006",
+            "on-primary": "#2900a0",
+            "secondary-fixed-dim": "#d4c78f",
+            "surface-container": "#1e1f27",
+            "surface-variant": "#34343c",
+            "inverse-primary": "#5847d2",
+            "on-tertiary-fixed": "#00201a",
+            "primary": "#c6bfff",
+            "surface-container-highest": "#34343c"
+          },
+          borderRadius: {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          spacing: {
+            "space-lg": "1.75rem",
+            "gutter": "1.5rem",
+            "space-sm": "0.5rem",
+            "space-xl": "3rem",
+            "space-xs": "0.25rem",
+            "margin": "2rem",
+            "space-md": "1rem"
+          },
+          fontFamily: {
+            "title-md": ["Manrope", "sans-serif"],
+            "display-xl-mobile": ["Bodoni Moda", "serif"],
+            "body-lg": ["Manrope", "sans-serif"],
+            "display-xl": ["Bodoni Moda", "serif"],
+            "headline-sm": ["Bodoni Moda", "serif"],
+            "headline-md": ["Bodoni Moda", "serif"],
+            "label-md": ["Space Grotesk", "monospace"],
+            "body-sm": ["Manrope", "sans-serif"],
+            "title-lg": ["Manrope", "sans-serif"],
+            "label-sm": ["Space Grotesk", "monospace"],
+            "headline-lg-mobile": ["Bodoni Moda", "serif"],
+            "body-md": ["Manrope", "sans-serif"],
+            "headline-lg": ["Bodoni Moda", "serif"]
+          },
+          fontSize: {
+            "title-md": ["17px", { lineHeight: "24px", letterSpacing: "0em", fontWeight: "600" }],
+            "display-xl-mobile": ["40px", { lineHeight: "48px", letterSpacing: "-0.01em", fontWeight: "400" }],
+            "body-lg": ["17px", { lineHeight: "28px", letterSpacing: "0.01em", fontWeight: "400" }],
+            "display-xl": ["64px", { lineHeight: "72px", letterSpacing: "-0.02em", fontWeight: "400" }],
+            "headline-sm": ["24px", { lineHeight: "32px", letterSpacing: "0em", fontWeight: "500" }],
+            "headline-md": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "400" }],
+            "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.08em", fontWeight: "500" }],
+            "body-sm": ["13px", { lineHeight: "20px", letterSpacing: "0.01em", fontWeight: "400" }],
+            "title-lg": ["20px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600" }],
+            "label-sm": ["10px", { lineHeight: "14px", letterSpacing: "0.12em", fontWeight: "600" }],
+            "headline-lg-mobile": ["30px", { lineHeight: "38px", letterSpacing: "-0.01em", fontWeight: "500" }],
+            "body-md": ["15px", { lineHeight: "24px", letterSpacing: "0.01em", fontWeight: "400" }],
+            "headline-lg": ["44px", { lineHeight: "52px", letterSpacing: "-0.015em", fontWeight: "500" }]
+          }
+        }
+      }
+    };
+  </script>
 </head>
-<body>
+<body class="bg-background font-body-md text-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col justify-between">
 
-  <!-- Floating Animated Background Orbs -->
-  <div class="orb-scene" aria-hidden="true">
-    <div class="orb orb-top-right"></div>
-    <div class="orb orb-mid-left"></div>
-    <div class="orb orb-bottom-left"></div>
-    <div class="orb orb-mid-right"></div>
-  </div>
-
-  <div class="wrapper">
-    <!-- Top Pill Navbar -->
-    <header class="nav-capsule">
-      <a href="/" class="nav-brand">
-        <div class="nav-logo-v">
-          <svg viewBox="0 0 24 24">
-            <path d="M4 4l8 16L20 4h-4l-4 10-4-10H4z"/>
-          </svg>
-        </div>
-        <span>viva-simulator</span>
-      </a>
-
-      <div class="theme-control" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
-        <span class="theme-label">Theme</span>
-        <div class="toggle-track">
-          <div class="toggle-thumb"></div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-      <h1 class="hero-title">
-        Master Technical Vivas &amp;<br>
-        Oral Defense <span class="gradient-ai">with AI</span>
-      </h1>
-      <p class="hero-subtitle">
-        AI oral examination platform for technical defense, syllabus document ingestion, and modern viva preparation.
-      </p>
-
-      <!-- Search & Input Bar -->
-      <div class="join-container">
-        <form class="join-box" onsubmit="handleTokenSubmit(event)" autocomplete="off">
-          <div class="search-icon">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-            </svg>
+  <!-- Header -->
+  <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl border-b border-white/[0.08]">
+    <div class="h-20 w-full px-6 md:px-12 flex items-center justify-between">
+      <div class="flex items-center gap-6">
+        <a class="flex items-center gap-3 group" href="/">
+          <div class="relative flex items-center justify-center w-10 h-10 rounded-lg bg-surface-container-lowest p-[1px] shadow-[0_0_12px_rgba(108,92,231,0.3)]">
+            <div class="absolute inset-0 rounded-lg bg-gradient-to-tr from-primary-container via-secondary/30 to-tertiary opacity-70 group-hover:opacity-100 transition-opacity"></div>
+            <div class="relative w-full h-full bg-surface-container-lowest rounded-[7px] flex items-center justify-center">
+              <span class="font-label-md text-label-md tracking-wider font-bold text-secondary uppercase">vs</span>
+            </div>
           </div>
-          <input type="text" id="tokenInput" class="join-input" placeholder="Search &amp; Input (e.g. viva-xyz123)..." required>
-          <button type="submit" class="launch-btn">Launch Exam</button>
-        </form>
+          <div class="flex flex-col">
+            <div class="flex items-center gap-1.5">
+              <span class="font-title-md text-title-md tracking-tight text-on-surface font-semibold">viva-simulator</span>
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+            </div>
+            <span class="font-label-sm text-label-sm text-outline tracking-widest uppercase">Research &amp; Defense Core</span>
+          </div>
+        </a>
       </div>
 
-      <!-- Feature Chips Row (3 items exactly from mockup) -->
-      <div class="chips-row">
-        <div class="stat-chip">
-          <div class="chip-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
+      <nav class="flex items-center gap-4">
+        <a href="/student" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all">
+          <span class="material-symbols-outlined text-lg text-tertiary">school</span>
+          <span>Student Prep</span>
+        </a>
+        <a href="/teacher/login" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-body-sm font-semibold bg-surface-container-high border border-white/[0.08] text-secondary hover:bg-surface-bright transition-all">
+          <span class="material-symbols-outlined text-lg">gavel</span>
+          <span>Faculty Portal</span>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Experience -->
+  <main class="w-full pt-24 bg-surface min-h-screen flex-1">
+    <div class="flex flex-col w-full overflow-hidden text-on-surface">
+
+      <!-- Subtle Ambient Top Luminescence -->
+      <div class="relative w-full">
+        <div class="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[640px] opacity-40 blur-[130px] rounded-full bg-gradient-to-b from-primary-container via-secondary/15 to-transparent"></div>
+        <div class="pointer-events-none absolute top-20 right-10 w-[420px] h-[420px] opacity-25 blur-[100px] rounded-full bg-tertiary"></div>
+        <div class="pointer-events-none absolute top-44 left-6 w-[480px] h-[480px] opacity-20 blur-[110px] rounded-full bg-secondary-fixed"></div>
+
+        <!-- Hero Stage -->
+        <section class="relative z-10 px-6 md:px-12 pt-16 max-w-7xl mx-auto w-full flex flex-col items-center text-center pb-14 py-10">
+
+          <!-- Architectural Metadata Pill -->
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-lowest/80 backdrop-blur-md shadow-xl transition-all duration-300 hover:bg-surface-container-low/90 cursor-default border border-white/[0.06]">
+            <div class="flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+              <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            </div>
+            <span class="font-label-sm text-label-sm tracking-[0.2em] text-on-surface-variant font-medium">
+              VIVA SIMULATION ARCHITECTURE · ACADEMIC &amp; DEFENSE PROTOCOL
+            </span>
+            <span class="px-1.5 py-[2px] rounded bg-surface-variant/70 text-secondary font-label-sm text-[9px] uppercase tracking-wider font-semibold">
+              v4.9
+            </span>
           </div>
-          <span>4D Rubrics</span>
+
+          <!-- Master Editorial Headline -->
+          <h1 class="font-headline-lg text-headline-lg md:font-display-xl md:text-display-xl max-w-5xl tracking-tight text-on-surface font-normal mt-6">
+            Master Technical Vivas &amp;
+            <span class="italic font-display-xl text-secondary-fixed bg-clip-text text-transparent bg-gradient-to-r from-secondary-fixed via-tertiary-fixed-dim to-primary-fixed block sm:inline font-light">
+              Oral Defense
+            </span>
+          </h1>
+
+          <!-- Scholarly Subtitle -->
+          <p class="max-w-2xl font-body-lg text-body-lg text-on-surface-variant text-balance leading-relaxed mt-4">
+            High-fidelity cognitive inquisition designed for postgraduate scholars and dissertation review boards. Bridge the chasm between raw written theory and unflinching, real-time verbal scrutiny.
+          </p>
+
+          <!-- Command Launcher (Token Ingestion) -->
+          <div class="w-full max-w-2xl flex flex-col items-center gap-4 mt-8">
+            <form id="launchForm" class="w-full relative group rounded-2xl p-[1px] bg-gradient-to-r from-secondary/40 via-primary-container/30 to-tertiary/40 shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(108,92,231,0.25)]" onsubmit="handleExamSubmit(event)">
+              <div class="relative flex items-center justify-between bg-surface-container-lowest/90 backdrop-blur-xl rounded-[15px] p-2 pl-4 border border-white/[0.08]">
+                <div class="flex items-center gap-3 flex-1">
+                  <span class="material-symbols-outlined text-outline text-xl">search</span>
+                  <div class="flex flex-col items-start w-full">
+                    <span class="font-label-sm text-[9px] uppercase tracking-widest text-outline">Examination Registry Code</span>
+                    <input id="vivaCodeInput" type="text" placeholder="ENTER EXAM OR DOSSIER CODE (E.G. VIVA-XYZ123)" class="bg-transparent text-on-surface font-label-md text-label-md tracking-wider font-semibold focus:outline-none w-full placeholder:text-outline-variant/60 uppercase">
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="hidden sm:inline-flex items-center px-2 py-1 rounded bg-surface-container-high border border-white/[0.08] text-[10px] font-label-sm text-outline tracking-wider uppercase">⌘K</span>
+                  <button type="submit" id="launchExamBtn" class="group/btn relative inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-secondary-fixed to-secondary text-surface-container-lowest font-label-md text-label-md font-semibold tracking-wider uppercase shadow-lg hover:shadow-secondary/25 transition-all duration-300 hover:brightness-105 active:scale-95">
+                    <span class="font-semibold">Launch Exam</span>
+                    <span class="material-symbols-outlined text-base transition-transform group-hover/btn:translate-x-1">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <!-- Feature Pills -->
+            <div class="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low/80 border border-white/[0.08] backdrop-blur-md">
+                <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">4D Rubric Scoring</span>
+              </div>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low/80 border border-white/[0.08] backdrop-blur-md">
+                <span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Real-time Voice Defense</span>
+              </div>
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low/80 border border-white/[0.08] backdrop-blur-md">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Private &amp; Sandboxed</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Editorial Section Divider -->
+      <div class="w-full max-w-7xl mx-auto px-6 md:px-12 my-2">
+        <div class="relative h-[1px] w-full bg-gradient-to-r from-transparent via-outline-variant/30 to-transparent"></div>
+      </div>
+
+      <!-- Dual Workspace Portals -->
+      <section class="px-6 md:px-12 max-w-7xl mx-auto w-full py-12">
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div>
+            <div class="inline-flex items-center gap-2 mb-3">
+              <span class="font-label-sm text-label-sm uppercase tracking-[0.25em] text-secondary font-semibold">Dual Domain Orchestration</span>
+              <span class="w-8 h-[1px] bg-secondary/40"></span>
+            </div>
+            <h2 class="font-headline-md text-headline-md md:font-headline-lg md:text-headline-lg text-on-surface tracking-tight font-normal">
+              Two Tailored Environments
+            </h2>
+          </div>
+          <p class="font-body-md text-body-md text-on-surface-variant max-w-md leading-relaxed">
+            Engineered with singular focus for candidate preparation and committee consensus. Separate protocols calibrated to each discipline.
+          </p>
         </div>
 
-        <div class="stat-chip">
-          <div class="chip-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="23"></line>
-            </svg>
-          </div>
-          <span>Voice AI</span>
-        </div>
+        <!-- Split Grid Bento -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
 
-        <div class="stat-chip">
-          <div class="chip-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
+          <!-- Student Portal Card -->
+          <div class="group relative rounded-3xl p-[1px] bg-gradient-to-b from-tertiary/35 via-primary-container/20 to-transparent transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(29,223,193,0.15)] flex flex-col">
+            <div class="relative flex-1 rounded-[23px] bg-surface-container-low/85 backdrop-blur-xl p-8 sm:p-10 flex flex-col justify-between overflow-hidden">
+              <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-tertiary/10 rounded-full blur-3xl"></div>
+              <div>
+                <div class="flex items-center justify-between gap-4 mb-8">
+                  <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-tertiary shadow-inner">
+                      <span class="material-symbols-outlined text-2xl">school</span>
+                    </div>
+                    <div>
+                      <span class="font-label-sm text-label-sm uppercase tracking-widest text-outline">Candidate Protocol</span>
+                      <div class="font-title-md text-title-md text-on-surface font-semibold">Student Defense Studio</div>
+                    </div>
+                  </div>
+                  <span class="px-3 py-1 rounded-full bg-tertiary-container/30 text-tertiary-fixed font-label-sm text-label-sm tracking-widest uppercase font-medium">
+                    Live Acoustic Loop
+                  </span>
+                </div>
+
+                <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-8">
+                  Experience the physiological pressure of high-table cross-examination. Synthetic faculty counter-proposals calibrate to thesis weak points, challenging premise leaps, literature citations, and boundary conditions.
+                </p>
+
+                <ul class="space-y-3.5 font-body-sm text-body-sm text-on-surface-variant mb-8">
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-tertiary text-base mt-0.5">check_circle</span>
+                    <span>Sub-200ms verbal acoustic turnaround mirrors authentic interrogation timing.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-tertiary text-base mt-0.5">check_circle</span>
+                    <span>Automated detection of verbal hedging, apologetic syntax, and circular citation logic.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-tertiary text-base mt-0.5">check_circle</span>
+                    <span>Immediate post-session transcript indexed to committee skepticism score.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <a class="w-full group/btn inline-flex items-center justify-between px-6 py-4 rounded-xl bg-surface-container-high hover:bg-surface-bright text-on-surface transition-all duration-300" href="/student">
+                <span class="font-label-md text-label-md tracking-wider font-semibold uppercase text-tertiary group-hover/btn:text-on-surface">Enter Candidate Studio</span>
+                <span class="material-symbols-outlined text-tertiary transition-transform group-hover/btn:translate-x-1">arrow_outward</span>
+              </a>
+            </div>
           </div>
-          <span>100% Private</span>
+
+          <!-- Faculty Portal Card -->
+          <div class="group relative rounded-3xl p-[1px] bg-gradient-to-b from-secondary/40 via-secondary-container/30 to-transparent transition-all duration-500 hover:shadow-[0_20px_50px_-15px_rgba(212,199,143,0.15)] flex flex-col">
+            <div class="relative flex-1 rounded-[23px] bg-surface-container-low/85 backdrop-blur-xl p-8 sm:p-10 flex flex-col justify-between overflow-hidden">
+              <div class="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-secondary/10 rounded-full blur-3xl"></div>
+              <div>
+                <div class="flex items-center justify-between gap-4 mb-8">
+                  <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-xl bg-surface-container flex items-center justify-center text-secondary shadow-inner">
+                      <span class="material-symbols-outlined text-2xl">gavel</span>
+                    </div>
+                    <div>
+                      <span class="font-label-sm text-label-sm uppercase tracking-widest text-outline">Advisory Authority</span>
+                      <div class="font-title-md text-title-md text-on-surface font-semibold">Faculty &amp; Committee Suite</div>
+                    </div>
+                  </div>
+                  <span class="px-3 py-1 rounded-full bg-secondary-container/40 text-secondary-fixed font-label-sm text-label-sm tracking-widest uppercase font-medium">
+                    Consensus Core
+                  </span>
+                </div>
+
+                <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed mb-8">
+                  Standardize oral examination integrity across departmental boards. Generate rigorous, multi-tiered questioning trees from syllabus documents, theses drafts, and disciplinary blind spots.
+                </p>
+
+                <ul class="space-y-3.5 font-body-sm text-body-sm text-on-surface-variant mb-8">
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-base mt-0.5">verified</span>
+                    <span>Ingest arbitrary dissertation PDFs to auto-compile tiered adversarial questions.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-base mt-0.5">verified</span>
+                    <span>Abolish subjective fatigue drift during extensive back-to-back defense slots.</span>
+                  </li>
+                  <li class="flex items-start gap-2.5">
+                    <span class="material-symbols-outlined text-secondary text-base mt-0.5">verified</span>
+                    <span>Cryptographically verifiable consensus audit trail for degree conferral boards.</span>
+                  </li>
+                </ul>
+              </div>
+
+              <a class="w-full group/btn inline-flex items-center justify-between px-6 py-4 rounded-xl bg-gradient-to-r from-secondary-fixed to-secondary text-surface-container-lowest font-semibold hover:shadow-lg hover:shadow-secondary/25 transition-all duration-300" href="/teacher/login">
+                <span class="font-label-md text-label-md tracking-wider font-semibold uppercase">Access Faculty Suite</span>
+                <span class="material-symbols-outlined transition-transform group-hover/btn:translate-x-1">arrow_outward</span>
+              </a>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Atmospheric Quote Anchor -->
+      <section class="max-w-5xl mx-auto px-6 md:px-12 text-center w-full py-12">
+        <div class="px-8 py-10 md:px-14 md:py-12 rounded-3xl border border-white/[0.08] bg-surface-container-lowest/90 backdrop-blur-md relative overflow-hidden flex flex-col items-center shadow-2xl">
+          <div class="font-label-sm text-label-sm text-[10px] uppercase tracking-[0.25em] text-tertiary mb-4">AXIOM OF RIGOR</div>
+          <p class="font-display-xl italic font-light text-xl md:text-2xl text-[#e2e2eb] leading-relaxed max-w-4xl text-center">
+            &ldquo;Knowledge that can only be transcribed onto parchment is incomplete.<br class="hidden md:inline"> True scientific defensibility exists only when an architect can withstand<br class="hidden md:inline"> the spoken scrutiny of their peers.&rdquo;
+          </p>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full bg-surface-container-lowest border-t border-white/[0.08] py-8">
+    <div class="w-full px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex flex-col md:flex-row items-center gap-6">
+        <div class="flex items-center gap-2">
+          <span class="font-title-md text-title-md tracking-tight text-on-surface font-semibold">viva-simulator</span>
+          <span class="font-body-sm text-body-sm text-outline">&copy; 2026 All rights reserved.</span>
+        </div>
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-surface-container-low border border-white/[0.08]">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-tertiary"></span>
+          </span>
+          <span class="font-label-sm text-label-sm uppercase tracking-widest text-on-surface-variant">Sim Core Operational</span>
         </div>
       </div>
-    </section>
 
-    <!-- Two Portal Cards -->
-    <div class="portals-container">
-      <!-- Student Space Card -->
-      <div class="portal-box portal-student">
-        <div class="portal-header">
-          <div class="portal-avatar">
-            🎓
-          </div>
-          <div class="portal-headings">
-            <h3>Student Space</h3>
-            <p>Practice lab and oral viva examination prep for students.</p>
-          </div>
-        </div>
-
-        <ul class="portal-bullets">
-          <li>
-            <span class="bullet-dot"></span>
-            Comparing with 4D objective rubrics
-          </li>
-          <li>
-            <span class="bullet-dot"></span>
-            Easy-use AI examination questions
-          </li>
-          <li>
-            <span class="bullet-dot"></span>
-            100% Private examination practices
-          </li>
-        </ul>
-
-        <a href="/student" class="portal-action-btn">Student Space</a>
-      </div>
-
-      <!-- Instructor Portal Card -->
-      <div class="portal-box portal-teacher">
-        <div class="portal-header">
-          <div class="portal-avatar">
-            👤
-          </div>
-          <div class="portal-headings">
-            <h3>Instructor Portal</h3>
-            <p>Learn more about consistent grading and AI oral examination platform.</p>
-          </div>
-        </div>
-
-        <ul class="portal-bullets">
-          <li>
-            <span class="bullet-dot"></span>
-            Oral examination rubric authoring
-          </li>
-          <li>
-            <span class="bullet-dot"></span>
-            Real-time oral examination selection
-          </li>
-          <li>
-            <span class="bullet-dot"></span>
-            100% Private examination practices
-          </li>
-        </ul>
-
-        <a href="/teacher/login" class="portal-action-btn">Instructor Portal</a>
+      <div class="flex flex-wrap items-center justify-center gap-6">
+        <a class="font-label-sm text-label-sm uppercase tracking-widest text-outline hover:text-on-surface transition-colors" href="/student">Student Prep</a>
+        <a class="font-label-sm text-label-sm uppercase tracking-widest text-outline hover:text-on-surface transition-colors" href="/teacher/login">Teacher Login</a>
+        <a class="font-label-sm text-label-sm uppercase tracking-widest text-outline hover:text-on-surface transition-colors" href="https://github.com/Harman-777/viva-simulator" target="_blank" rel="noopener">GitHub</a>
       </div>
     </div>
-  </div>
+  </footer>
 
-  <script src="/static/focus-tools.js"></script>
+  <!-- Functional Scripts -->
   <script>
-    function handleTokenSubmit(e) {
-      e.preventDefault();
-      let val = document.getElementById("tokenInput").value.trim();
-      if (!val) return;
+    function handleExamSubmit(e) {
+      if (e) e.preventDefault();
+      const codeInput = document.getElementById('vivaCodeInput');
+      if (!codeInput) return;
+      let val = codeInput.value.trim();
+      if (!val) {
+        codeInput.focus();
+        return;
+      }
 
       if (val.startsWith("http://") || val.startsWith("https://")) {
         try {
@@ -845,6 +428,18 @@
       val = val.replace(/^\/viva\//, "").replace(/^viva\//, "");
       window.location.href = `/viva/${val}`;
     }
+
+    // Command + K or Ctrl + K shortcut to focus launcher docket
+    window.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        const codeInput = document.getElementById('vivaCodeInput');
+        if (codeInput) {
+          codeInput.focus();
+          codeInput.select();
+        }
+      }
+    });
   </script>
 </body>
 </html>

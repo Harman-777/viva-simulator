@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Personal Practice Lab — Upload syllabus materials, generate oral viva questions, and evaluate your spoken answers with AI.">
   <title>Practice Lab · Viva Simulator</title>
+
+  <!-- Google Fonts Preload -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
   <script src="/static/toast.js"></script>
@@ -139,7 +145,7 @@
     <header class="topbar">
       <a href="/" class="brand" aria-label="Viva Simulator Home">
         <span class="brand-mark" aria-hidden="true"><span></span></span>
-        <span>viva<span class="brand-dot">-simulator</span></span>
+        <span>viva<span class="brand-dot">.</span>simulator</span>
       </a>
 
       <nav class="nav-links" aria-label="Primary Navigation">
@@ -269,7 +275,7 @@
         <!-- Initial Blank State -->
         <div id="setupPromptState" style="text-align: center; margin: auto; padding: 40px 20px;">
           <div style="font-size: 52px; margin-bottom: 14px;">🎙️</div>
-          <h2>Interactive AI Viva Stage</h2>
+          <h2>Interactive <span>AI Viva Stage</span></h2>
           <p style="max-width: 500px; margin: 10px auto 24px; color: var(--text-secondary); line-height: 1.5;">
             Upload your syllabus notes on the left or select a subject, then click generate to begin a realistic oral defense simulation with examiner voice read-aloud and 4-dimension rubric scoring.
           </p>

@@ -5,6 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Teacher Command Center — Manage viva assessments, question banks, AI grading, and live student evaluations.">
   <title>Teacher Dashboard · Viva Simulator</title>
+
+  <!-- Google Fonts Preload -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Manrope:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="/static/styles.css">
   <script src="/static/theme.js"></script>
   <script src="/static/toast.js"></script>
@@ -19,81 +25,8 @@
       gap: 16px;
     }
 
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
-      margin-bottom: 28px;
-    }
-
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 20px 22px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .kpi-value {
-      font-family: var(--font-mono);
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--text-primary);
-    }
-
-    .kpi-label {
-      font-size: 12.5px;
-      font-weight: 650;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .assessment-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 20px;
-      transition: all var(--transition-fast);
-    }
-
-    .assessment-card:hover {
-      border-color: var(--border-active);
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm);
-    }
-
-    .preset-btn {
-      font-size: 11.5px;
-      padding: 5px 12px;
-      border-radius: var(--radius-sm);
-      background: var(--surface-elevated);
-      border: 1px solid var(--border-active);
-      color: var(--primary);
-      cursor: pointer;
-      font-weight: 700;
-      transition: all var(--transition-fast);
-    }
-
-    .preset-btn:hover {
-      background: var(--primary);
-      color: #ffffff;
-    }
-
     @media (max-width: 900px) {
-      .kpi-grid { grid-template-columns: 1fr 1fr; }
       .assessment-card { flex-direction: column; align-items: flex-start; }
-    }
-
-    @media (max-width: 500px) {
-      .kpi-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -102,7 +35,7 @@
     <header class="topbar">
       <a href="/" class="brand" aria-label="Viva Simulator Home">
         <span class="brand-mark" aria-hidden="true"><span></span></span>
-        <span>viva<span class="brand-dot">-simulator</span></span>
+        <span>viva<span class="brand-dot">.</span>simulator</span>
       </a>
       <div class="topbar-actions">
         <span class="badge badge-primary" id="teacherDisplay">Teacher Session</span>
