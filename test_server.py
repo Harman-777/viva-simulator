@@ -387,7 +387,28 @@ class TestVivaSimulatorCore(unittest.TestCase):
             self.assertEqual(status, 200, f"Legacy fallback for {route} failed with status {status}")
             self.assertIn(snippet, data.get("raw", ""), f"Snippet '{snippet}' not found in {route}")
 
+    def test_15_apk_download_route(self):
+        # WSGI test for android APK route
+        environ = {
+            "REQUEST_METHOD": "GET",
+            "PATH_INFO": "/download/VivaSimulator.apk",
+            "QUERY_STRING": "",
+            "CONTENT_LENGTH": "0",
+            "wsgi.input": io.BytesIO(b""),
+        }
+        captured = {}
+        def start_response(status, headers):
+            captured["status"] = status
+            captured["headers"] = dict(headers)
+
+        result = server.app(environ, start_response)
+        self.assertTrue(captured["status"].startswith("200"))
+        self.assertEqual(captured["headers"].get("Content-Type"), "application/vnd.android.package-archive")
+        raw_bytes = b"".join(result)
+        self.assertGreater(len(raw_bytes), 1000000)  # > 1 MB APK
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

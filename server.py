@@ -1635,6 +1635,18 @@ class VivaHandler(BaseHTTPRequestHandler):
             return self.serve_file(STATIC_DIR / "viva" / "exam.html")
         if path == "/viva/complete":
             return self.serve_file(STATIC_DIR / "viva" / "complete.html")
+        if path in ("/download/app", "/download/VivaSimulator.apk"):
+            apk_path = STATIC_DIR / "downloads" / "VivaSimulator.apk"
+            if apk_path.is_file():
+                content = apk_path.read_bytes()
+                self.send_response(HTTPStatus.OK)
+                self.send_header("Content-Type", "application/vnd.android.package-archive")
+                self.send_header("Content-Disposition", 'attachment; filename="VivaSimulator.apk"')
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+                return
+            return self.send_json({"error": "APK not found."}, HTTPStatus.NOT_FOUND)
         if path in pages:
             return self.serve_file(STATIC_DIR / pages[path])
 
@@ -1686,7 +1698,8 @@ class VivaHandler(BaseHTTPRequestHandler):
             ".css": "text/css; charset=utf-8",
             ".js": "application/javascript; charset=utf-8",
             ".json": "application/json; charset=utf-8",
-            ".svg": "image/svg+xml"
+            ".svg": "image/svg+xml",
+            ".apk": "application/vnd.android.package-archive"
         }.get(resolved.suffix.lower(), "application/octet-stream")
 
         self.send_response(HTTPStatus.OK)

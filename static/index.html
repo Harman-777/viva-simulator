@@ -24,6 +24,7 @@
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/static/js/shared/android-bridge.js"></script>
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
@@ -151,7 +152,15 @@
         </a>
       </div>
 
-      <nav class="flex items-center gap-4">
+      <nav class="flex items-center gap-3">
+        <a href="/download/VivaSimulator.apk" download class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-body-sm font-semibold bg-surface-container-high border border-white/[0.08] text-primary hover:bg-surface-bright transition-all" title="Download Android App APK">
+          <span class="material-symbols-outlined text-base text-primary">android</span>
+          <span class="text-xs md:text-sm">Android App</span>
+        </a>
+        <button type="button" onclick="VivaMobile.shareApp()" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all" title="Share Viva Simulator with classmates">
+          <span class="material-symbols-outlined text-base text-secondary">share</span>
+          <span class="hidden md:inline text-xs">Share</span>
+        </button>
         <a href="/student" class="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-body-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all">
           <span class="material-symbols-outlined text-lg text-tertiary">school</span>
           <span>Student Prep</span>
@@ -240,6 +249,10 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                 <span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-medium">Private &amp; Sandboxed</span>
               </div>
+              <a href="/download/VivaSimulator.apk" download class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-md text-primary hover:bg-primary/20 transition-all font-semibold" title="Download Android App APK">
+                <span class="material-symbols-outlined text-sm">android</span>
+                <span class="font-label-sm text-label-sm uppercase tracking-wider">📱 Download Android App</span>
+              </a>
             </div>
           </div>
         </section>

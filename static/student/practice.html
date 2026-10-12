@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/static/css/styles.css">
   <script src="/static/js/shared/theme.js"></script>
   <script src="/static/js/shared/toast.js"></script>
+  <script src="/static/js/shared/android-bridge.js"></script>
   <script src="/static/js/student/notes.js"></script>
   <style>
     .workspace-layout {
@@ -154,6 +155,12 @@
       </nav>
 
       <div class="topbar-actions">
+        <a href="/download/VivaSimulator.apk" download class="button button-quiet button-compact" title="Download Android App APK">
+          📱 Android App (.apk)
+        </a>
+        <button type="button" class="button button-quiet button-compact" onclick="VivaMobile.shareApp()" title="Share Viva Simulator with classmates">
+          📤 Share App
+        </button>
         <div id="weatherPill" class="weather-pill" style="display: none;"></div>
         <button type="button" class="theme-toggle-btn" onclick="toggleTheme()">☀️ <span class="theme-btn-text">Light</span></button>
       </div>
@@ -261,6 +268,17 @@
               <input type="number" id="customCountInput" min="1" max="30" value="7">
             </div>
 
+            <!-- Auto-Read Questions Toggle -->
+            <div style="background: var(--surface-elevated); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <div>
+                <label for="practiceAutoReadToggle" style="font-weight: 700; font-size: 12.5px; cursor: pointer; display: flex; align-items: center; gap: 4px; margin-bottom: 2px;">
+                  <span>🔊 Auto-Read Questions</span>
+                </label>
+                <div style="font-size: 11px; color: var(--text-muted);">Use device voice automatically</div>
+              </div>
+              <input type="checkbox" id="practiceAutoReadToggle" style="width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer;">
+            </div>
+
             <button type="button" id="generateBtn" class="button button-primary" style="width: 100%; justify-content: center;">
               Generate AI Viva Questions ⚡
             </button>
@@ -296,9 +314,12 @@
                 ⭐ Star Question
               </button>
             </div>
-            <div style="display: flex; gap: 8px;">
-              <button type="button" id="readQuestionBtn" class="button button-secondary button-compact" title="Read question aloud">
-                🔊 Read Aloud
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button type="button" id="readQuestionBtn" class="button button-secondary button-compact" title="Replay question using your device voice">
+                🔊 Listen Again
+              </button>
+              <button type="button" class="button button-quiet button-compact" onclick="VivaMobile.shareApp()" title="Share Viva Simulator with classmates">
+                📤 Share
               </button>
               <button type="button" id="exitPracticeBtn" class="button button-quiet button-compact">Exit ✕</button>
             </div>

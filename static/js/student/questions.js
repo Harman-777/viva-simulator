@@ -411,6 +411,13 @@
 
     // Stop previous audio
     if (window.stopExaminerSpeech) window.stopExaminerSpeech();
+
+    // Auto-read question if enabled
+    if (window.VivaMobile && window.VivaMobile.getAutoSpeak()) {
+      setTimeout(() => {
+        if (readQuestionBtn) readQuestionBtn.click();
+      }, 350);
+    }
   }
 
   function updateStarButtonState(qid) {
@@ -436,12 +443,26 @@
       if (!q) return;
       readQuestionBtn.disabled = true;
       readQuestionBtn.textContent = "🔊 Reading...";
-      if (window.speakExaminerQuestion) {
+      if (window.VivaMobile) {
+        window.VivaMobile.speak(q.question, null, () => {
+          readQuestionBtn.disabled = false;
+          readQuestionBtn.textContent = "🔊 Listen Again";
+        });
+      } else if (window.speakExaminerQuestion) {
         window.speakExaminerQuestion(q.question, () => {
           readQuestionBtn.disabled = false;
-          readQuestionBtn.textContent = "🔊 Read Aloud";
+          readQuestionBtn.textContent = "🔊 Listen Again";
         });
       }
+    });
+  }
+
+  // Bind practice auto-read preference checkbox
+  const practiceAutoReadToggle = document.getElementById("practiceAutoReadToggle");
+  if (practiceAutoReadToggle && window.VivaMobile) {
+    practiceAutoReadToggle.checked = window.VivaMobile.getAutoSpeak();
+    practiceAutoReadToggle.addEventListener("change", () => {
+      window.VivaMobile.setAutoSpeak(practiceAutoReadToggle.checked);
     });
   }
 

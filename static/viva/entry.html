@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/static/css/styles.css">
   <script src="/static/js/shared/theme.js"></script>
   <script src="/static/js/shared/toast.js"></script>
+  <script src="/static/js/shared/android-bridge.js"></script>
 </head>
 <body class="intake-page">
   <div style="margin-bottom: 24px; text-align: center;">
@@ -45,11 +46,35 @@
         <input type="password" id="examPin" placeholder="Enter PIN code from professor...">
       </div>
 
+      <!-- Device Speech & Oral Preferences -->
+      <div style="background: var(--surface-elevated); padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 18px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+          <div>
+            <label for="autoReadToggle" style="font-weight: 700; font-size: 13.5px; color: var(--text-primary); cursor: pointer; display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+              <span>🔊 Auto-Read Questions Aloud</span>
+            </label>
+            <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.35;">
+              Automatically speak each question via your device default voice when it appears.
+            </div>
+          </div>
+          <input type="checkbox" id="autoReadToggle" style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+        </div>
+      </div>
+
       <button type="submit" id="startExamBtn" class="button button-primary" style="width: 100%; justify-content: center;">
         Begin Viva Examination →
       </button>
 
       <div id="intakeErrorMessage" style="margin-top: 14px; color: var(--danger); font-size: 12.5px; font-weight: 600; text-align: center;"></div>
+
+      <div style="margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; font-size: 12px;">
+        <a href="/download/VivaSimulator.apk" download style="color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 4px; font-weight: 600;">
+          <span>📱 Download Android App</span>
+        </a>
+        <button type="button" class="button button-quiet button-compact" onclick="VivaMobile.shareApp()" style="font-size: 11.5px;">
+          📤 Share App
+        </button>
+      </div>
     </form>
   </div>
 
@@ -144,7 +169,16 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", loadVivaDetails);
+    document.addEventListener("DOMContentLoaded", () => {
+      loadVivaDetails();
+      const autoReadToggle = document.getElementById("autoReadToggle");
+      if (autoReadToggle && window.VivaMobile) {
+        autoReadToggle.checked = window.VivaMobile.getAutoSpeak();
+        autoReadToggle.addEventListener("change", () => {
+          window.VivaMobile.setAutoSpeak(autoReadToggle.checked);
+        });
+      }
+    });
   </script>
 </body>
 </html>

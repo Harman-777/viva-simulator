@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="/static/css/styles.css">
   <script src="/static/js/shared/theme.js"></script>
   <script src="/static/js/shared/toast.js"></script>
+  <script src="/static/js/shared/android-bridge.js"></script>
   <style>
     .exam-stage {
       max-width: 920px;
@@ -39,6 +40,9 @@
       </div>
 
       <div class="topbar-actions">
+        <button type="button" class="button button-quiet button-compact" onclick="VivaMobile.shareApp()" title="Share Viva Simulator with classmates">
+          📤 Share App
+        </button>
         <button type="button" id="finishExamBtn" class="button button-danger button-compact" onclick="confirmFinishExam()">
           Finish &amp; Submit Exam ✓
         </button>
@@ -52,10 +56,14 @@
           <p class="eyebrow" id="examSubjectBadge">SUBJECT VIVA</p>
           <h1 id="examTitle" style="font-size: 22px;">Oral Examination HUD</h1>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
           <span id="studentIdentity" class="badge badge-neutral">Student</span>
-          <button type="button" id="readExamQBtn" class="button button-secondary button-compact" onclick="readActiveQuestion()">
-            🔊 Read Aloud
+          <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0; background: var(--surface-elevated); padding: 5px 9px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+            <input type="checkbox" id="examAutoReadToggle" style="accent-color: var(--primary); cursor: pointer; width: 15px; height: 15px;">
+            <span style="font-weight: 600;">🔊 Auto-Read</span>
+          </label>
+          <button type="button" id="readExamQBtn" class="button button-secondary button-compact" onclick="readActiveQuestion()" title="Replay question using your device voice">
+            🔊 Listen Again
           </button>
         </div>
       </div>
@@ -148,6 +156,15 @@
         examSubjectBadge.textContent = (a.subject || "VIVA").toUpperCase();
         studentIdentity.textContent = a.student.name || "Student Attempt";
 
+        // Auto-read setting sync
+        const examAutoReadToggle = document.getElementById("examAutoReadToggle");
+        if (examAutoReadToggle && window.VivaMobile) {
+          examAutoReadToggle.checked = window.VivaMobile.getAutoSpeak();
+          examAutoReadToggle.addEventListener("change", () => {
+            window.VivaMobile.setAutoSpeak(examAutoReadToggle.checked);
+          });
+        }
+
         questions = a.questions || [];
         renderStepper();
         showQuestion(0);
@@ -186,6 +203,11 @@
 
       renderStepper();
       if (window.stopExaminerSpeech) window.stopExaminerSpeech();
+
+      // Automatically speak question using device default voice if Auto-Read is enabled
+      if (window.VivaMobile && window.VivaMobile.getAutoSpeak()) {
+        setTimeout(readActiveQuestion, 350);
+      }
     }
 
     function readActiveQuestion() {
@@ -193,10 +215,15 @@
       if (!q) return;
       readExamQBtn.disabled = true;
       readExamQBtn.textContent = "🔊 Reading...";
-      if (window.speakExaminerQuestion) {
+      if (window.VivaMobile) {
+        window.VivaMobile.speak(q.question, null, () => {
+          readExamQBtn.disabled = false;
+          readExamQBtn.textContent = "🔊 Listen Again";
+        });
+      } else if (window.speakExaminerQuestion) {
         window.speakExaminerQuestion(q.question, () => {
           readExamQBtn.disabled = false;
-          readExamQBtn.textContent = "🔊 Read Aloud";
+          readExamQBtn.textContent = "🔊 Listen Again";
         });
       }
     }
