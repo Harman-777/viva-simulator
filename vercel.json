@@ -16,6 +16,14 @@
   ],
   "routes": [
     {
+      "src": "/download/VivaSimulator.apk",
+      "dest": "/static/downloads/VivaSimulator.apk"
+    },
+    {
+      "src": "/download/app",
+      "dest": "/static/downloads/VivaSimulator.apk"
+    },
+    {
       "src": "/static/styles.css",
       "dest": "/static/css/styles.css"
     },
