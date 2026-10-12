@@ -304,37 +304,87 @@
       window.location.href = `/viva/${token}`;
     }
 
-    function renderNotesOverview() {
+    async function renderNotesOverview() {
       const container = document.getElementById("notesOverviewContainer");
       if (!container) return;
+
+      const ownerKey = localStorage.getItem("viva_library_owner_key") || "";
+      let materials = [];
+      if (ownerKey) {
+        try {
+          const res = await fetch(`/api/library/materials?owner_key=${encodeURIComponent(ownerKey)}`);
+          if (res.ok) {
+            const data = await res.json();
+            materials = data.materials || [];
+          }
+        } catch (_) {}
+      }
+
       const notes = StudentNotes.list();
-      if (!notes.length) {
+
+      if (!notes.length && !materials.length) {
         container.innerHTML = `
-          <div style="padding: 16px; background: var(--surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
-            <p style="font-size: 13px; color: var(--text-muted);">No study notes recorded yet. As you practice questions in the lab, take notes and star questions to build your personalized revision vault.</p>
+          <div style="padding: 20px; background: var(--surface-elevated); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); text-align: center;">
+            <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 12px;">No syllabus documents or study notes uploaded yet.</p>
+            <a href="/questions" class="button button-primary button-compact" style="display: inline-flex;">
+              📁 Upload &amp; Practice Syllabus Notes →
+            </a>
           </div>
         `;
         return;
       }
 
-      container.innerHTML = `
-        <div style="display: grid; gap: 10px;">
-          ${notes.slice(0, 3).map(n => `
-            <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-              <div>
-                <span class="badge badge-primary" style="font-size: 10.5px;">${n.topic}</span>
-                <strong style="font-size: 13.5px; color: var(--text-primary); margin-left: 6px;">${n.questionPrompt || 'Study Note'}</strong>
-                <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px;">${n.text.slice(0, 120)}${n.text.length > 120 ? '...' : ''}</p>
-              </div>
-              <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${new Date(n.updatedAt).toLocaleDateString()}</span>
+      let html = '<div style="display: grid; gap: 14px;">';
+
+      if (materials.length) {
+        html += `
+          <div>
+            <p class="eyebrow" style="margin-bottom: 6px; font-size: 11px;">INGESTED SYLLABUS DOCUMENTS (${materials.length})</p>
+            <div style="display: grid; gap: 8px;">
+              ${materials.map(m => `
+                <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">📄</span>
+                    <div>
+                      <strong style="font-size: 13px; color: var(--text-primary);">${m.file_name}</strong>
+                      <span style="font-size: 11px; color: var(--text-muted); display: block;">${m.character_count || 0} characters extracted</span>
+                    </div>
+                  </div>
+                  <a href="/questions" class="button button-quiet button-compact" style="font-size: 11.5px;">Practice →</a>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-          <div style="text-align: right; margin-top: 4px;">
-            <span style="font-size: 12px; color: var(--text-muted);">${notes.length} total note${notes.length === 1 ? '' : 's'} in vault · </span>
-            <a href="/questions" style="font-size: 12px; color: var(--primary); font-weight: 700; text-decoration: none;">Open Lab to Practice &amp; Add More →</a>
           </div>
+        `;
+      }
+
+      if (notes.length) {
+        html += `
+          <div>
+            <p class="eyebrow" style="margin-bottom: 6px; font-size: 11px;">PERSONAL STUDY NOTES (${notes.length})</p>
+            <div style="display: grid; gap: 8px;">
+              ${notes.slice(0, 3).map(n => `
+                <div style="background: var(--surface-elevated); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                  <div>
+                    <span class="badge badge-primary" style="font-size: 10.5px;">${n.topic}</span>
+                    <strong style="font-size: 13.5px; color: var(--text-primary); margin-left: 6px;">${n.questionPrompt || 'Study Note'}</strong>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">${n.text.slice(0, 120)}${n.text.length > 120 ? '...' : ''}</p>
+                  </div>
+                  <span style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">${new Date(n.updatedAt).toLocaleDateString()}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      html += `
+        <div style="text-align: right; margin-top: 4px;">
+          <a href="/questions" style="font-size: 12px; color: var(--primary); font-weight: 700; text-decoration: none;">Open Practice Lab to Ingest More Notes &amp; Practice →</a>
         </div>
-      `;
+      </div>`;
+
+      container.innerHTML = html;
     }
 
     document.addEventListener("DOMContentLoaded", loadSavedAiConfig);

@@ -695,5 +695,9 @@
     }, 100);
   };
 
-  document.addEventListener("DOMContentLoaded", loadLibraryMaterials);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", loadLibraryMaterials);
+  } else {
+    loadLibraryMaterials();
+  }
 })();
